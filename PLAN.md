@@ -2,7 +2,7 @@
 
 ## 1. 功能描述
 
-培训机构管理包，负责安全生产培训机构的全生命周期管理功能。包括机构基本信息管理、机构资质管理、场地设施管理、应急预案管理、制度建设管理、机构评估和认证等功能。符合AQ8011-2023培训机构基本条件要求，实现培训机构的规范化管理。
+培训机构管理包，负责安全生产培训机构的全生命周期管理功能。包括机构基本信息管理、机构资质管理、场地设施管理等功能。符合AQ8011-2023培训机构基本条件要求，实现培训机构的规范化管理。
 
 ## 2. 完整能力要求
 
@@ -21,8 +21,6 @@
 - [ ] 机构资质证书管理
 - [ ] 场地面积和设施配置管理
 - [ ] 消防安全设备管理
-- [ ] 应急预案编制和演练管理
-- [ ] 培训制度建立和维护
 
 #### 2.2.2 机构基本信息管理
 
@@ -50,33 +48,6 @@
 - [ ] 安全设施配置管理
 - [ ] 设施维护保养管理
 - [ ] 设施使用记录管理
-
-#### 2.2.5 应急预案管理
-
-- [ ] 应急预案编制管理
-- [ ] 应急演练计划管理
-- [ ] 应急演练记录管理
-- [ ] 应急设备配置管理
-- [ ] 应急联系人管理
-- [ ] 应急响应流程管理
-
-#### 2.2.6 制度建设管理
-
-- [ ] 培训制度建立
-- [ ] 安全管理制度
-- [ ] 质量管理制度
-- [ ] 档案管理制度
-- [ ] 制度执行监督
-- [ ] 制度更新维护
-
-#### 2.2.7 机构评估认证
-
-- [ ] 机构能力评估
-- [ ] 机构资质认证
-- [ ] 机构等级评定
-- [ ] 评估结果管理
-- [ ] 认证证书管理
-- [ ] 持续改进管理
 
 ## 3. 实体设计
 
@@ -150,116 +121,6 @@ class InstitutionFacility
 }
 ```
 
-#### EmergencyPlan（应急预案）
-
-```php
-class EmergencyPlan
-{
-    private string $id;
-    private Institution $institution;
-    private string $planType;  // 预案类型
-    private string $planName;  // 预案名称
-    private string $planVersion;  // 预案版本
-    private array $emergencyScenarios;  // 应急场景
-    private array $responseSteps;  // 应急步骤
-    private array $emergencyContacts;  // 应急联系人
-    private array $emergencyEquipment;  // 应急设备
-    private string $planStatus;  // 预案状态
-    private \DateTimeInterface $approvalDate;  // 批准日期
-    private \DateTimeInterface $effectiveDate;  // 生效日期
-    private \DateTimeInterface $reviewDate;  // 复审日期
-    private \DateTimeInterface $createTime;
-    private \DateTimeInterface $updateTime;
-}
-```
-
-#### EmergencyDrill（应急演练）
-
-```php
-class EmergencyDrill
-{
-    private string $id;
-    private EmergencyPlan $emergencyPlan;
-    private string $drillName;  // 演练名称
-    private string $drillType;  // 演练类型
-    private \DateTimeInterface $drillDate;  // 演练日期
-    private array $participants;  // 参与人员
-    private array $drillScenarios;  // 演练场景
-    private array $drillResults;  // 演练结果
-    private array $foundProblems;  // 发现问题
-    private array $improvementMeasures;  // 改进措施
-    private string $drillStatus;  // 演练状态
-    private string $drillEvaluator;  // 演练评估人
-    private \DateTimeInterface $createTime;
-}
-```
-
-#### InstitutionPolicy（机构制度）
-
-```php
-class InstitutionPolicy
-{
-    private string $id;
-    private Institution $institution;
-    private string $policyType;  // 制度类型
-    private string $policyName;  // 制度名称
-    private string $policyVersion;  // 制度版本
-    private string $policyContent;  // 制度内容
-    private array $applicableScope;  // 适用范围
-    private string $policyStatus;  // 制度状态
-    private \DateTimeInterface $approvalDate;  // 批准日期
-    private \DateTimeInterface $effectiveDate;  // 生效日期
-    private \DateTimeInterface $reviewDate;  // 复审日期
-    private string $approver;  // 批准人
-    private \DateTimeInterface $createTime;
-    private \DateTimeInterface $updateTime;
-}
-```
-
-#### InstitutionAssessment（机构评估）
-
-```php
-class InstitutionAssessment
-{
-    private string $id;
-    private Institution $institution;
-    private string $assessmentType;  // 评估类型
-    private string $assessmentStandard;  // 评估标准
-    private \DateTimeInterface $assessmentDate;  // 评估日期
-    private array $assessmentItems;  // 评估项目
-    private array $assessmentScores;  // 评估分数
-    private float $totalScore;  // 总分
-    private string $assessmentLevel;  // 评估等级
-    private array $assessmentComments;  // 评估意见
-    private array $improvementSuggestions;  // 改进建议
-    private string $assessor;  // 评估人
-    private string $assessmentStatus;  // 评估状态
-    private \DateTimeInterface $createTime;
-}
-```
-
-#### InstitutionCertification（机构认证）
-
-```php
-class InstitutionCertification
-{
-    private string $id;
-    private Institution $institution;
-    private InstitutionAssessment $assessment;
-    private string $certificationType;  // 认证类型
-    private string $certificationLevel;  // 认证等级
-    private string $certificateNumber;  // 证书编号
-    private \DateTimeInterface $certificationDate;  // 认证日期
-    private \DateTimeInterface $validFrom;  // 有效期开始
-    private \DateTimeInterface $validTo;  // 有效期结束
-    private array $certificationScope;  // 认证范围
-    private string $certificationStatus;  // 认证状态
-    private string $certifyingBody;  // 认证机构
-    private \DateTimeInterface $createTime;
-    private \DateTimeInterface $updateTime;
-}
-```
-
 #### InstitutionChangeRecord（机构变更记录）
 
 ```php
@@ -324,62 +185,6 @@ class FacilityService
     public function getFacilityUtilization(string $facilityId): array;
     public function validateFacilityRequirements(string $institutionId): array;
     public function generateFacilityReport(string $institutionId): array;
-}
-```
-
-#### EmergencyPlanService
-
-```php
-class EmergencyPlanService
-{
-    public function createEmergencyPlan(string $institutionId, array $planData): EmergencyPlan;
-    public function updateEmergencyPlan(string $planId, array $planData): EmergencyPlan;
-    public function approveEmergencyPlan(string $planId, string $approver): EmergencyPlan;
-    public function scheduleEmergencyDrill(string $planId, array $drillData): EmergencyDrill;
-    public function conductEmergencyDrill(string $drillId, array $drillResults): EmergencyDrill;
-    public function getEmergencyPlanEffectiveness(string $planId): array;
-}
-```
-
-#### PolicyService
-
-```php
-class PolicyService
-{
-    public function createPolicy(string $institutionId, array $policyData): InstitutionPolicy;
-    public function updatePolicy(string $policyId, array $policyData): InstitutionPolicy;
-    public function approvePolicy(string $policyId, string $approver): InstitutionPolicy;
-    public function schedulePolicy Review(string $policyId, \DateTimeInterface $reviewDate): void;
-    public function getPolicyCompliance(string $institutionId): array;
-    public function generatePolicyReport(string $institutionId): array;
-}
-```
-
-#### AssessmentService
-
-```php
-class AssessmentService
-{
-    public function conductAssessment(string $institutionId, array $assessmentData): InstitutionAssessment;
-    public function calculateAssessmentScore(string $assessmentId): float;
-    public function determineAssessmentLevel(float $score): string;
-    public function generateAssessmentReport(string $assessmentId): array;
-    public function getAssessmentHistory(string $institutionId): array;
-    public function compareAssessmentResults(array $assessmentIds): array;
-}
-```
-
-#### CertificationService
-
-```php
-class CertificationService
-{
-    public function issueCertification(string $assessmentId, array $certificationData): InstitutionCertification;
-    public function renewCertification(string $certificationId, array $renewalData): InstitutionCertification;
-    public function revokeCertification(string $certificationId, string $reason): InstitutionCertification;
-    public function validateCertification(string $certificationId): bool;
-    public function getExpiringCertifications(int $days): array;
-    public function generateCertificationReport(string $institutionId): array;
 }
 ```
 
@@ -476,59 +281,7 @@ class FacilityMaintenanceReminderCommand extends Command
 }
 ```
 
-### 5.4 应急管理命令
-
-#### EmergencyDrillScheduleCommand
-
-```php
-class EmergencyDrillScheduleCommand extends Command
-{
-    protected static $defaultName = 'institution:emergency:drill-schedule';
-    
-    // 安排应急演练
-    public function execute(InputInterface $input, OutputInterface $output): int;
-}
-```
-
-#### EmergencyPlanReviewCommand
-
-```php
-class EmergencyPlanReviewCommand extends Command
-{
-    protected static $defaultName = 'institution:emergency:plan-review';
-    
-    // 应急预案复审提醒
-    public function execute(InputInterface $input, OutputInterface $output): int;
-}
-```
-
-### 5.5 评估认证命令
-
-#### AssessmentScheduleCommand
-
-```php
-class AssessmentScheduleCommand extends Command
-{
-    protected static $defaultName = 'institution:assessment:schedule';
-    
-    // 安排机构评估
-    public function execute(InputInterface $input, OutputInterface $output): int;
-}
-```
-
-#### CertificationExpiryCheckCommand
-
-```php
-class CertificationExpiryCheckCommand extends Command
-{
-    protected static $defaultName = 'institution:certification:expiry-check';
-    
-    // 检查认证到期情况
-    public function execute(InputInterface $input, OutputInterface $output): int;
-}
-```
-
-### 5.6 报告生成命令
+### 5.4 报告生成命令
 
 #### InstitutionReportCommand
 
@@ -542,96 +295,7 @@ class InstitutionReportCommand extends Command
 }
 ```
 
-#### ComplianceReportCommand
-
-```php
-class ComplianceReportCommand extends Command
-{
-    protected static $defaultName = 'institution:compliance:report';
-    
-    // 生成合规报告
-    public function execute(InputInterface $input, OutputInterface $output): int;
-}
-```
-
-## 6. 配置和集成
-
-### 6.1 Bundle配置
-
-```yaml
-# config/packages/train_institution.yaml
-train_institution:
-    institution:
-        auto_approval: false  # 自动审批
-        status_check_interval: 86400  # 状态检查间隔（秒）
-        data_sync_enabled: true
-        
-    qualification:
-        expiry_warning_days: [90, 30, 7]  # 到期提醒天数
-        auto_renewal_enabled: false
-        qualification_types:
-            - training_license
-            - safety_training_qualification
-            - special_operation_training
-            
-    facility:
-        inspection_frequency: 'quarterly'  # 检查频率
-        maintenance_reminder_days: 7
-        capacity_utilization_threshold: 0.8
-        facility_types:
-            - classroom
-            - training_ground
-            - office_area
-            - safety_equipment_room
-            
-    emergency:
-        drill_frequency: 'quarterly'  # 演练频率
-        plan_review_frequency: 'annually'  # 预案复审频率
-        drill_participation_threshold: 0.9
-        
-    assessment:
-        assessment_frequency: 'annually'  # 评估频率
-        scoring_system: 'percentage'
-        pass_threshold: 80
-        assessment_levels:
-            - excellent  # 优秀 (90-100)
-            - good      # 良好 (80-89)
-            - qualified # 合格 (70-79)
-            - unqualified # 不合格 (<70)
-            
-    certification:
-        certification_validity_years: 3
-        renewal_grace_period_days: 30
-        auto_revocation_enabled: true
-        
-    policy:
-        review_frequency: 'annually'
-        approval_required: true
-        version_control: true
-        
-    notifications:
-        enabled: true
-        email_notifications: true
-        sms_notifications: false
-        notification_types:
-            - qualification_expiry
-            - facility_inspection_due
-            - emergency_drill_scheduled
-            - assessment_scheduled
-            - certification_expiry
-            
-    reporting:
-        auto_generation: true
-        report_formats: ['pdf', 'excel']
-        report_retention_months: 60
-        
-    cache:
-        enabled: true
-        ttl: 3600  # 1小时
-        qualification_ttl: 86400  # 24小时
-```
-
-### 6.2 依赖包
+## 6. 依赖包
 
 - `real-name-authentication-bundle` - 实名认证
 - `doctrine-entity-checker-bundle` - 实体检查
@@ -653,39 +317,6 @@ train_institution:
 - [ ] 机构注册流程测试
 - [ ] 资质管理流程测试
 - [ ] 设施管理流程测试
-- [ ] 应急管理流程测试
-- [ ] 评估认证流程测试
-
-### 7.3 性能测试
-
-- [ ] 大量机构数据处理测试
-- [ ] 资质到期检查性能测试
-- [ ] 报告生成性能测试
-
-## 8. 部署和运维
-
-### 8.1 部署要求
-
-- PHP 8.2+
-- MySQL 8.0+ / PostgreSQL 14+
-- Redis（缓存）
-- 足够的存储空间（文档和报告）
-- 定时任务支持
-
-### 8.2 监控指标
-
-- 机构注册成功率
-- 资质到期预警率
-- 设施检查完成率
-- 应急演练参与率
-- 评估认证通过率
-
-### 8.3 安全要求
-
-- [ ] 机构数据访问控制
-- [ ] 敏感信息加密存储
-- [ ] 操作审计日志
-- [ ] 文档权限管理
 
 ---
 

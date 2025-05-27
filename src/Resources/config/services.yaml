@@ -5,19 +5,9 @@ services:
     autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
     public: false
 
-  Tourze\TrainInstitutionBundle\Controller\:
-    resource: '../../Controller/'
-  Tourze\TrainInstitutionBundle\EventSubscriber\:
-    resource: '../../EventSubscriber/'
-  Tourze\TrainInstitutionBundle\Functions\:
-    resource: '../../Functions/'
-  Tourze\TrainInstitutionBundle\Procedure\:
-    resource: '../../Procedure/'
+  Tourze\TrainInstitutionBundle\Command\:
+    resource: '../../Command/'
+  Tourze\TrainInstitutionBundle\Repository\:
+    resource: '../../Repository/'
   Tourze\TrainInstitutionBundle\Service\:
     resource: '../../Service/'
-  Tourze\TrainInstitutionBundle\Value\:
-    resource: '../../Value/'
-
-  symfony-ecol.property-accessor:
-    class: Symfony\Component\PropertyAccess\PropertyAccessor
-    factory: [ 'Symfony\Component\PropertyAccess\PropertyAccess', 'createPropertyAccessor' ]
