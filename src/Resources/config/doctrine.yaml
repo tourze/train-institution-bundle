@@ -1,9 +1,0 @@
-doctrine:
-    orm:
-        mappings:
-            TrainInstitutionBundle:
-                type: attribute
-                dir: '%kernel.project_dir%/packages/train-institution-bundle/src/Entity'
-                prefix: 'Tourze\TrainInstitutionBundle\Entity'
-                alias: TrainInstitution
-                is_bundle: false 

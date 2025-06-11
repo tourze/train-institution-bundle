@@ -261,7 +261,7 @@ class InstitutionStatusCheckCommand extends Command
 
             return Command::SUCCESS;
 
-        } catch (\Exception $e) {
+        } catch  (\Throwable $e) {
             $io->error('执行过程中发生错误: ' . $e->getMessage());
             return Command::FAILURE;
         }
