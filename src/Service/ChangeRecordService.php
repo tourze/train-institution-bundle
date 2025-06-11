@@ -210,7 +210,7 @@ class ChangeRecordService
                     'success' => true,
                     'change_type' => $changeRecord->getChangeType(),
                 ];
-            } catch  (\Throwable $e) {
+            } catch (\Throwable $e) {
                 $results[] = [
                     'record_id' => $recordId,
                     'success' => false,
@@ -237,7 +237,7 @@ class ChangeRecordService
                     'success' => true,
                     'change_type' => $changeRecord->getChangeType(),
                 ];
-            } catch  (\Throwable $e) {
+            } catch (\Throwable $e) {
                 $results[] = [
                     'record_id' => $recordId,
                     'success' => false,

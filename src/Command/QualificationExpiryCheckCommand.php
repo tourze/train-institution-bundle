@@ -171,7 +171,7 @@ class QualificationExpiryCheckCommand extends Command
 
             return Command::SUCCESS;
 
-        } catch  (\Throwable $e) {
+        } catch (\Throwable $e) {
             $io->error('执行过程中发生错误: ' . $e->getMessage());
             return Command::FAILURE;
         }

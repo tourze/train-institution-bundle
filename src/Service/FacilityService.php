@@ -308,7 +308,7 @@ class FacilityService
                     'success' => true,
                 ];
                 $currentDate = $currentDate->modify("+{$intervalDays} days");
-            } catch  (\Throwable $e) {
+            } catch (\Throwable $e) {
                 $results[] = [
                     'facility_id' => $facilityId,
                     'success' => false,

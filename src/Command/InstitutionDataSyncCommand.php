@@ -130,7 +130,7 @@ class InstitutionDataSyncCommand extends Command
                             $this->validateSyncData($data);
                             $successCount++;
                         }
-                    } catch  (\Throwable $e) {
+                    } catch (\Throwable $e) {
                         $failureCount++;
                         $io->error("同步数据失败: {$data['name']} - {$e->getMessage()}");
                     }
@@ -178,7 +178,7 @@ class InstitutionDataSyncCommand extends Command
 
             return Command::SUCCESS;
 
-        } catch  (\Throwable $e) {
+        } catch (\Throwable $e) {
             $io->error('执行过程中发生错误: ' . $e->getMessage());
             return Command::FAILURE;
         }
