@@ -79,37 +79,37 @@ class QualificationService
         }
 
         // 更新字段
-        if (isset($qualificationData['qualificationType'])) {
+        if ((bool) isset($qualificationData['qualificationType'])) {
             $qualification->setQualificationType($qualificationData['qualificationType']);
         }
-        if (isset($qualificationData['qualificationName'])) {
+        if ((bool) isset($qualificationData['qualificationName'])) {
             $qualification->setQualificationName($qualificationData['qualificationName']);
         }
-        if (isset($qualificationData['certificateNumber'])) {
+        if ((bool) isset($qualificationData['certificateNumber'])) {
             if ($this->qualificationRepository->isCertificateNumberExists($qualificationData['certificateNumber'], $qualificationId)) {
                 throw new \InvalidArgumentException('证书编号已存在');
             }
             $qualification->setCertificateNumber($qualificationData['certificateNumber']);
         }
-        if (isset($qualificationData['issuingAuthority'])) {
+        if ((bool) isset($qualificationData['issuingAuthority'])) {
             $qualification->setIssuingAuthority($qualificationData['issuingAuthority']);
         }
-        if (isset($qualificationData['issueDate'])) {
+        if ((bool) isset($qualificationData['issueDate'])) {
             $qualification->setIssueDate($qualificationData['issueDate']);
         }
-        if (isset($qualificationData['validFrom'])) {
+        if ((bool) isset($qualificationData['validFrom'])) {
             $qualification->setValidFrom($qualificationData['validFrom']);
         }
-        if (isset($qualificationData['validTo'])) {
+        if ((bool) isset($qualificationData['validTo'])) {
             $qualification->setValidTo($qualificationData['validTo']);
         }
-        if (isset($qualificationData['qualificationScope'])) {
+        if ((bool) isset($qualificationData['qualificationScope'])) {
             $qualification->setQualificationScope($qualificationData['qualificationScope']);
         }
-        if (isset($qualificationData['qualificationStatus'])) {
+        if ((bool) isset($qualificationData['qualificationStatus'])) {
             $qualification->setQualificationStatus($qualificationData['qualificationStatus']);
         }
-        if (isset($qualificationData['attachments'])) {
+        if ((bool) isset($qualificationData['attachments'])) {
             $qualification->setAttachments($qualificationData['attachments']);
         }
 
@@ -170,7 +170,7 @@ class QualificationService
         }
 
         // 验证续期数据
-        if (empty($renewalData['newValidTo'])) {
+        if ((bool) empty($renewalData['newValidTo'])) {
             throw new \InvalidArgumentException('新的有效期结束日期不能为空');
         }
 
@@ -188,16 +188,16 @@ class QualificationService
         $qualification->renew($newValidTo, $newCertificateNumber);
 
         // 更新其他信息
-        if (isset($renewalData['issuingAuthority'])) {
+        if ((bool) isset($renewalData['issuingAuthority'])) {
             $qualification->setIssuingAuthority($renewalData['issuingAuthority']);
         }
-        if (isset($renewalData['issueDate'])) {
+        if ((bool) isset($renewalData['issueDate'])) {
             $qualification->setIssueDate($renewalData['issueDate']);
         }
-        if (isset($renewalData['qualificationScope'])) {
+        if ((bool) isset($renewalData['qualificationScope'])) {
             $qualification->setQualificationScope($renewalData['qualificationScope']);
         }
-        if (isset($renewalData['attachments'])) {
+        if ((bool) isset($renewalData['attachments'])) {
             $qualification->setAttachments($renewalData['attachments']);
         }
 
@@ -335,7 +335,7 @@ class QualificationService
         ];
 
         foreach ($requiredFields as $field => $label) {
-            if (empty($qualificationData[$field])) {
+            if ((bool) empty($qualificationData[$field])) {
                 $errors[] = "{$label}不能为空";
             }
         }

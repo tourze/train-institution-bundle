@@ -158,8 +158,6 @@ class InstitutionReportCommandTest extends TestCase
         $this->assertStringContainsString("未找到ID为 {$institutionId} 的机构", $output);
     }
 
-
-
     /**
      * 测试JSON格式输出
      */
@@ -435,6 +433,7 @@ class InstitutionReportCommandTest extends TestCase
         $this->assertEquals(Command::FAILURE, $exitCode);
         $output = $this->commandTester->getDisplay();
         $this->assertStringContainsString('执行过程中发生错误', $output);
-        $this->assertStringContainsString('数据库连接失败', $output);
+        $this->// TODO: 检查断言的期望值是否正确
+        assertStringContainsString('数据库连接失败', $output);
     }
 } 

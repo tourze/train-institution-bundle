@@ -67,18 +67,18 @@ class FacilityInspectionScheduleCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $startDateStr = $input->getOption('start-date');
         $interval = (int) $input->getOption('interval');
-        $dryRun = $input->getOption('dry-run');
+        $dryRun = (bool) $input->getOption('dry-run');
         $autoSchedule = $input->getOption('auto-schedule');
 
         $io->title('培训设施检查安排');
 
-        if ($dryRun) {
+        if ((bool) $dryRun) {
             $io->note('运行在干运行模式，不会执行实际操作');
         }
 
         try {
             // 解析开始日期
-            $startDate = $startDateStr 
+            $startDate = !empty($startDateStr)
                 ? new \DateTimeImmutable($startDateStr)
                 : new \DateTimeImmutable('tomorrow');
 
@@ -87,7 +87,7 @@ class FacilityInspectionScheduleCommand extends Command
             // 获取需要检查的设施
             $facilitiesNeedingInspection = $this->facilityService->getFacilitiesNeedingInspection();
 
-            if (empty($facilitiesNeedingInspection)) {
+            if ((bool) empty($facilitiesNeedingInspection)) {
                 $io->success('当前没有需要检查的设施');
                 return Command::SUCCESS;
             }
@@ -121,7 +121,7 @@ class FacilityInspectionScheduleCommand extends Command
             );
 
             // 如果是自动安排模式或用户确认
-            if ($autoSchedule || $io->confirm('是否要安排这些设施的检查？', false)) {
+            if ((bool) $autoSchedule || $io->confirm('是否要安排这些设施的检查？', false)) {
                 $io->section('安排检查计划');
 
                 if (!$dryRun) {
@@ -138,7 +138,7 @@ class FacilityInspectionScheduleCommand extends Command
                     $scheduleData = [];
 
                     foreach ($results as $result) {
-                        if ($result['success']) {
+                        if ((bool) $result['success']) {
                             $successCount++;
                             $scheduleData[] = [
                                 $result['facility_id'],

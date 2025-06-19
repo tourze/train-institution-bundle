@@ -153,8 +153,6 @@ class QualificationServiceTest extends TestCase
             ->willReturn($expiringQualifications);
 
         $result = $this->qualificationService->checkQualificationExpiry($institutionId);
-
-        $this->assertIsArray($result);
         $this->assertCount(2, $result);
     }
 
@@ -175,8 +173,6 @@ class QualificationServiceTest extends TestCase
             ->willReturn($expiringQualifications);
 
         $result = $this->qualificationService->getExpiringQualifications($days);
-
-        $this->assertIsArray($result);
         $this->assertCount(1, $result);
     }
 

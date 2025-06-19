@@ -75,34 +75,34 @@ class FacilityService
         }
 
         // 更新字段
-        if (isset($facilityData['facilityType'])) {
+        if ((bool) isset($facilityData['facilityType'])) {
             $facility->setFacilityType($facilityData['facilityType']);
         }
-        if (isset($facilityData['facilityName'])) {
+        if ((bool) isset($facilityData['facilityName'])) {
             $facility->setFacilityName($facilityData['facilityName']);
         }
-        if (isset($facilityData['facilityLocation'])) {
+        if ((bool) isset($facilityData['facilityLocation'])) {
             $facility->setFacilityLocation($facilityData['facilityLocation']);
         }
-        if (isset($facilityData['facilityArea'])) {
+        if ((bool) isset($facilityData['facilityArea'])) {
             $facility->setFacilityArea($facilityData['facilityArea']);
         }
-        if (isset($facilityData['capacity'])) {
+        if ((bool) isset($facilityData['capacity'])) {
             $facility->setCapacity($facilityData['capacity']);
         }
-        if (isset($facilityData['equipmentList'])) {
+        if ((bool) isset($facilityData['equipmentList'])) {
             $facility->setEquipmentList($facilityData['equipmentList']);
         }
-        if (isset($facilityData['safetyEquipment'])) {
+        if ((bool) isset($facilityData['safetyEquipment'])) {
             $facility->setSafetyEquipment($facilityData['safetyEquipment']);
         }
-        if (isset($facilityData['facilityStatus'])) {
+        if ((bool) isset($facilityData['facilityStatus'])) {
             $facility->setFacilityStatus($facilityData['facilityStatus']);
         }
-        if (isset($facilityData['lastInspectionDate'])) {
+        if ((bool) isset($facilityData['lastInspectionDate'])) {
             $facility->setLastInspectionDate($facilityData['lastInspectionDate']);
         }
-        if (isset($facilityData['nextInspectionDate'])) {
+        if ((bool) isset($facilityData['nextInspectionDate'])) {
             $facility->setNextInspectionDate($facilityData['nextInspectionDate']);
         }
 
@@ -369,7 +369,7 @@ class FacilityService
         ];
 
         foreach ($requiredFields as $field => $label) {
-            if (empty($facilityData[$field])) {
+            if ((bool) empty($facilityData[$field])) {
                 $errors[] = "{$label}不能为空";
             }
         }

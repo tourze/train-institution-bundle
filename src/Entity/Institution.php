@@ -8,6 +8,8 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Stringable;
+use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
 
 /**
  * 培训机构实体
@@ -15,109 +17,57 @@ use Doctrine\ORM\Mapping as ORM;
  * 符合AQ8011-2023培训机构基本条件要求
  * 管理培训机构的基本信息、联系方式、组织架构等
  */
-#[ORM\Entity(repositoryClass: 'Tourze\TrainInstitutionBundle\Repository\InstitutionRepository')]
-#[ORM\Table(name: 'train_institution')]
-#[ORM\HasLifecycleCallbacks]
-class Institution
+#[ORM\Entity(repositoryClass: InstitutionRepository::class)]
+#[ORM\Table(name: 'train_institution', options: ['comment' => '表描述'])]
+class Institution implements Stringable
 {
-    /**
-     * 机构ID
-     */
     #[ORM\Id]
-    #[ORM\Column(type: Types::STRING, length: 36)]
+    #[ORM\Column(type: Types::STRING, length: 36, options: ['comment' => '机构ID'])]
     private readonly string $id;
 
-    /**
-     * 机构名称
-     */
-    #[ORM\Column(type: Types::STRING, length: 255)]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '机构名称'])]
     private string $institutionName;
 
-    /**
-     * 机构代码
-     */
-    #[ORM\Column(type: Types::STRING, length: 50, unique: true)]
+    #[ORM\Column(type: Types::STRING, length: 50, unique: true, options: ['comment' => '机构代码'])]
     private string $institutionCode;
 
-    /**
-     * 机构类型
-     * 如：企业培训机构、社会培训机构、政府培训机构等
-     */
-    #[ORM\Column(type: Types::STRING, length: 50)]
+    #[ORM\Column(type: Types::STRING, length: 50, options: ['comment' => '机构类型：企业培训机构、社会培训机构、政府培训机构等'])]
     private string $institutionType;
 
-    /**
-     * 法人代表
-     */
-    #[ORM\Column(type: Types::STRING, length: 100)]
+    #[ORM\Column(type: Types::STRING, length: 100, options: ['comment' => '法人代表'])]
     private string $legalPerson;
 
-    /**
-     * 联系人
-     */
-    #[ORM\Column(type: Types::STRING, length: 100)]
+    #[ORM\Column(type: Types::STRING, length: 100, options: ['comment' => '联系人'])]
     private string $contactPerson;
 
-    /**
-     * 联系电话
-     */
-    #[ORM\Column(type: Types::STRING, length: 20)]
+    #[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '联系电话'])]
     private string $contactPhone;
 
-    /**
-     * 联系邮箱
-     */
-    #[ORM\Column(type: Types::STRING, length: 255)]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '联系邮箱'])]
     private string $contactEmail;
 
-    /**
-     * 机构地址
-     */
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: Types::TEXT, options: ['comment' => '机构地址'])]
     private string $address;
 
-    /**
-     * 经营范围
-     */
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: Types::TEXT, options: ['comment' => '经营范围'])]
     private string $businessScope;
 
-    /**
-     * 成立日期
-     */
-    #[ORM\Column(type: Types::DATE_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATE_IMMUTABLE, options: ['comment' => '成立日期'])]
     private \DateTimeImmutable $establishDate;
 
-    /**
-     * 注册号
-     */
-    #[ORM\Column(type: Types::STRING, length: 100)]
+    #[ORM\Column(type: Types::STRING, length: 100, options: ['comment' => '注册号'])]
     private string $registrationNumber;
 
-    /**
-     * 机构状态
-     * 如：待审核、正常运营、暂停营业、注销等
-     */
-    #[ORM\Column(type: Types::STRING, length: 20)]
+    #[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '机构状态：待审核、正常运营、暂停营业、注销等'])]
     private string $institutionStatus;
 
-    /**
-     * 组织架构
-     * JSON格式存储组织架构信息
-     */
-    #[ORM\Column(type: Types::JSON)]
+    #[ORM\Column(type: Types::JSON, options: ['comment' => '组织架构（JSON格式）'])]
     private array $organizationStructure;
 
-    /**
-     * 创建时间
-     */
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '创建时间'])]
     private \DateTimeImmutable $createTime;
 
-    /**
-     * 更新时间
-     */
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '更新时间'])]
     private \DateTimeImmutable $updateTime;
 
     /**
@@ -481,5 +431,10 @@ class Institution
     public function preUpdate(): void
     {
         $this->updateTime = new \DateTimeImmutable();
+    }
+
+    public function __toString(): string
+    {
+        return (string) $this->id;
     }
 } 

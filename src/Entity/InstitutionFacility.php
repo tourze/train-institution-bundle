@@ -6,6 +6,7 @@ namespace Tourze\TrainInstitutionBundle\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Stringable;
 
 /**
  * 机构设施实体
@@ -14,15 +15,15 @@ use Doctrine\ORM\Mapping as ORM;
  * 符合AQ8011-2023对培训场地和设施的要求
  */
 #[ORM\Entity(repositoryClass: 'Tourze\TrainInstitutionBundle\Repository\InstitutionFacilityRepository')]
-#[ORM\Table(name: 'train_institution_facility')]
+#[ORM\Table(name: 'train_institution_facility', options: ['comment' => '表描述'])]
 #[ORM\HasLifecycleCallbacks]
-class InstitutionFacility
+class InstitutionFacility implements Stringable
 {
     /**
      * 设施ID
      */
     #[ORM\Id]
-    #[ORM\Column(type: Types::STRING, length: 36)]
+#[ORM\Column(type: Types::STRING, length: 36, options: ['comment' => '字段说明'])]
     private readonly string $id;
 
     /**
@@ -36,77 +37,77 @@ class InstitutionFacility
      * 设施类型
      * 如：教室、实训场地、办公区域、会议室、图书馆等
      */
-    #[ORM\Column(type: Types::STRING, length: 50)]
+#[ORM\Column(type: Types::STRING, length: 50, options: ['comment' => '字段说明'])]
     private string $facilityType;
 
     /**
      * 设施名称
      */
-    #[ORM\Column(type: Types::STRING, length: 255)]
+#[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '字段说明'])]
     private string $facilityName;
 
     /**
      * 设施位置
      * 详细的位置描述，如楼层、房间号等
      */
-    #[ORM\Column(type: Types::STRING, length: 255)]
+#[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '字段说明'])]
     private string $facilityLocation;
 
     /**
      * 设施面积（平方米）
      */
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+#[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['comment' => '字段说明'])]
     private float $facilityArea;
 
     /**
      * 容纳人数
      */
-    #[ORM\Column(type: Types::INTEGER)]
+#[ORM\Column(type: Types::INTEGER, options: ['comment' => '字段说明'])]
     private int $capacity;
 
     /**
      * 设备清单
      * JSON格式存储设施内的设备信息
      */
-    #[ORM\Column(type: Types::JSON)]
+#[ORM\Column(type: Types::JSON, options: ['comment' => '字段说明'])]
     private array $equipmentList;
 
     /**
      * 安全设备
      * JSON格式存储消防、安全等设备信息
      */
-    #[ORM\Column(type: Types::JSON)]
+#[ORM\Column(type: Types::JSON, options: ['comment' => '字段说明'])]
     private array $safetyEquipment;
 
     /**
      * 设施状态
      * 如：正常使用、维修中、停用、待检查等
      */
-    #[ORM\Column(type: Types::STRING, length: 20)]
+#[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '字段说明'])]
     private string $facilityStatus;
 
     /**
      * 最后检查日期
      */
-    #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
+#[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true, options: ['comment' => '字段说明'])]
     private ?\DateTimeImmutable $lastInspectionDate;
 
     /**
      * 下次检查日期
      */
-    #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
+#[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true, options: ['comment' => '字段说明'])]
     private ?\DateTimeImmutable $nextInspectionDate;
 
     /**
      * 创建时间
      */
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+#[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '字段说明'])]
     private \DateTimeImmutable $createTime;
 
     /**
      * 更新时间
      */
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+#[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '字段说明'])]
     private \DateTimeImmutable $updateTime;
 
     public function __construct()
@@ -349,11 +350,11 @@ class InstitutionFacility
     public function hasSafetyEquipment(string $equipmentName): bool
     {
         foreach ($this->safetyEquipment as $equipment) {
-            if (is_array($equipment) && isset($equipment['name'])) {
+            if ((bool) is_array($equipment) && isset($equipment['name'])) {
                 if ($equipment['name'] === $equipmentName) {
                     return true;
                 }
-            } elseif (is_string($equipment) && $equipment === $equipmentName) {
+            } elseif ((bool) is_string($equipment) && $equipment === $equipmentName) {
                 return true;
             }
         }
@@ -427,5 +428,10 @@ class InstitutionFacility
     public function preUpdate(): void
     {
         $this->updateTime = new \DateTimeImmutable();
+    }
+
+    public function __toString(): string
+    {
+        return (string) $this->id;
     }
 } 

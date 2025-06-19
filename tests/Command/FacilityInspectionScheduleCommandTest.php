@@ -315,7 +315,8 @@ class FacilityInspectionScheduleCommandTest extends TestCase
         $this->assertEquals(Command::SUCCESS, $exitCode);
         $output = $this->commandTester->getDisplay();
         $this->assertStringContainsString('成功安排了 1 个设施的检查', $output);
-        $this->assertStringContainsString('有 1 个设施安排失败', $output);
+        $this->// TODO: 检查断言的期望值是否正确
+        assertStringContainsString('有 1 个设施安排失败', $output);
         $this->assertStringContainsString('设施状态不允许安排检查', $output);
     }
 
@@ -367,7 +368,8 @@ class FacilityInspectionScheduleCommandTest extends TestCase
         $this->assertEquals(Command::FAILURE, $exitCode);
         $output = $this->commandTester->getDisplay();
         $this->assertStringContainsString('执行过程中发生错误', $output);
-        $this->assertStringContainsString('数据库连接失败', $output);
+        $this->// TODO: 检查断言的期望值是否正确
+        assertStringContainsString('数据库连接失败', $output);
     }
 
     /**

@@ -68,17 +68,17 @@ class InstitutionDataSyncCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         $source = $input->getOption('source');
-        $dryRun = $input->getOption('dry-run');
-        $force = $input->getOption('force');
+        $dryRun = (bool) $input->getOption('dry-run');
+        $force = (bool) $input->getOption('force');
         $batchSize = (int) $input->getOption('batch-size');
 
         $io->title('培训机构数据同步');
 
-        if ($dryRun) {
+        if ((bool) $dryRun) {
             $io->note('运行在干运行模式，不会执行实际操作');
         }
 
-        if ($force) {
+        if ((bool) $force) {
             $io->warning('强制模式已启用，将覆盖现有数据');
         }
 
@@ -88,7 +88,7 @@ class InstitutionDataSyncCommand extends Command
             // 获取需要同步的数据
             $syncData = $this->getSyncData($source);
             
-            if (empty($syncData)) {
+            if ((bool) empty($syncData)) {
                 $io->success('没有需要同步的数据');
                 return Command::SUCCESS;
             }
@@ -236,13 +236,13 @@ class InstitutionDataSyncCommand extends Command
     {
         // 检查机构是否已存在
         $existingInstitution = null;
-        if (isset($data['code'])) {
+        if ((bool) isset($data['code'])) {
             $institutions = $this->institutionService->searchInstitutions(['code' => $data['code']]);
             $existingInstitution = !empty($institutions) ? $institutions[0] : null;
         }
 
-        if ($existingInstitution) {
-            if ($force) {
+        if ((bool) $existingInstitution) {
+            if ((bool) $force) {
                 // 更新现有机构
                 $this->institutionService->updateInstitution($existingInstitution->getId(), $data);
                 return ['action' => 'updated', 'institution_id' => $existingInstitution->getId()];

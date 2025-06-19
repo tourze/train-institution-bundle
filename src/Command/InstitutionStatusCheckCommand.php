@@ -73,13 +73,13 @@ class InstitutionStatusCheckCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $status = $input->getOption('status');
         $institutionId = $input->getOption('institution-id');
-        $dryRun = $input->getOption('dry-run');
+        $dryRun = (bool) $input->getOption('dry-run');
         $format = $input->getOption('format');
         $complianceOnly = $input->getOption('compliance-only');
 
         $io->title('培训机构状态检查');
 
-        if ($dryRun) {
+        if ((bool) $dryRun) {
             $io->note('运行在干运行模式，不会执行实际操作');
         }
 
@@ -87,15 +87,15 @@ class InstitutionStatusCheckCommand extends Command
             $institutions = [];
 
             // 根据参数获取要检查的机构
-            if ($institutionId) {
+            if ((bool) $institutionId) {
                 $institution = $this->institutionService->getInstitutionById($institutionId);
-                if ($institution) {
+                if ((bool) $institution) {
                     $institutions = [$institution];
                 } else {
                     $io->error("未找到ID为 {$institutionId} 的机构");
                     return Command::FAILURE;
                 }
-            } elseif ($status) {
+            } elseif ((bool) $status) {
                 $institutions = $this->institutionService->getInstitutionsByStatus($status);
                 $io->info("检查状态为 '{$status}' 的机构");
             } else {
@@ -104,7 +104,7 @@ class InstitutionStatusCheckCommand extends Command
                 $io->info('检查所有正常运营的机构');
             }
 
-            if (empty($institutions)) {
+            if ((bool) empty($institutions)) {
                 $io->warning('没有找到符合条件的机构');
                 return Command::SUCCESS;
             }
@@ -123,7 +123,7 @@ class InstitutionStatusCheckCommand extends Command
                 $complianceIssues = $this->institutionService->checkInstitutionCompliance($institution->getId());
                 $isCompliant = empty($complianceIssues);
                 
-                if ($isCompliant) {
+                if ((bool) $isCompliant) {
                     $compliantCount++;
                 } else {
                     $nonCompliantCount++;
@@ -198,10 +198,10 @@ class InstitutionStatusCheckCommand extends Command
 
                 case 'table':
                 default:
-                    if ($complianceOnly) {
+                    if ((bool) $complianceOnly) {
                         // 只显示有合规问题的机构
                         $nonCompliantResults = array_filter($checkResults, fn($r) => !$r['is_compliant']);
-                        if (empty($nonCompliantResults)) {
+                        if ((bool) empty($nonCompliantResults)) {
                             $io->success('所有机构都符合合规要求');
                         } else {
                             $io->warning("发现 " . count($nonCompliantResults) . " 个机构存在合规问题");

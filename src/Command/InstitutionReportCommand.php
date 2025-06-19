@@ -90,7 +90,7 @@ class InstitutionReportCommand extends Command
             // 解析日期范围
             $startDate = null;
             $endDate = null;
-            if ($dateRange) {
+            if ((bool) $dateRange) {
                 $dates = explode(',', $dateRange);
                 if (count($dates) === 2) {
                     $startDate = new \DateTimeImmutable(trim($dates[0]));
@@ -101,10 +101,10 @@ class InstitutionReportCommand extends Command
 
             $reportData = [];
 
-            if ($institutionId) {
+            if ((bool) $institutionId) {
                 // 生成单个机构报告
                 $institution = $this->institutionService->getInstitutionById($institutionId);
-                if (!$institution) {
+                if ($institution === null) {
                     $io->error("未找到ID为 {$institutionId} 的机构");
                     return Command::FAILURE;
                 }
@@ -121,7 +121,7 @@ class InstitutionReportCommand extends Command
             // 根据格式输出报告
             $reportContent = $this->formatReport($reportData, $format, $reportType);
 
-            if ($outputFile) {
+            if ((bool) $outputFile) {
                 // 输出到文件
                 file_put_contents($outputFile, $reportContent);
                 $io->success("报告已保存到文件：{$outputFile}");
@@ -260,7 +260,7 @@ class InstitutionReportCommand extends Command
      */
     private function getChangeReport(string $institutionId, ?\DateTimeInterface $startDate, ?\DateTimeInterface $endDate): array
     {
-        if ($startDate && $endDate) {
+        if ($startDate !== null && $endDate !== null) {
             $changes = $this->changeRecordService->getChangesByDateRange($institutionId, $startDate, $endDate);
             return ['changes_in_range' => $changes];
         }
@@ -320,7 +320,7 @@ class InstitutionReportCommand extends Command
      */
     private function displayTableReport(SymfonyStyle $io, array $reportData, string $reportType): void
     {
-        if (isset($reportData['institution'])) {
+        if ((bool) isset($reportData['institution'])) {
             // 单个机构报告
             $io->section('机构基本信息');
             $io->definitionList(
@@ -333,7 +333,7 @@ class InstitutionReportCommand extends Command
                 ['成立日期' => $reportData['institution']['establish_date']]
             );
 
-            if (isset($reportData['summary'])) {
+            if ((bool) isset($reportData['summary'])) {
                 $io->section('机构摘要');
                 $io->definitionList(
                     ['资质数量' => $reportData['summary']['qualification_count']],
@@ -345,7 +345,7 @@ class InstitutionReportCommand extends Command
             }
         } else {
             // 全局报告
-            if (isset($reportData['summary'])) {
+            if ((bool) isset($reportData['summary'])) {
                 $io->section('全局摘要');
                 $summary = $reportData['summary'];
                 $io->definitionList(
@@ -370,7 +370,7 @@ class InstitutionReportCommand extends Command
         $csv = "报告类型,{$reportType}\n";
         $csv .= "生成时间,{$reportData['generated_at']}\n";
         
-        if (isset($reportData['institution'])) {
+        if ((bool) isset($reportData['institution'])) {
             $csv .= "机构名称,{$reportData['institution']['name']}\n";
             $csv .= "机构代码,{$reportData['institution']['code']}\n";
         }
@@ -387,7 +387,7 @@ class InstitutionReportCommand extends Command
         $html .= "<h1>培训机构{$reportType}报告</h1>";
         $html .= "<p>生成时间：{$reportData['generated_at']}</p>";
         
-        if (isset($reportData['institution'])) {
+        if ((bool) isset($reportData['institution'])) {
             $inst = $reportData['institution'];
             $html .= "<h2>机构信息</h2>";
             $html .= "<p>机构名称：{$inst['name']}</p>";

@@ -88,34 +88,34 @@ class InstitutionService
         ];
 
         // 更新字段
-        if (isset($institutionData['institutionName'])) {
+        if ((bool) isset($institutionData['institutionName'])) {
             $institution->setInstitutionName($institutionData['institutionName']);
         }
-        if (isset($institutionData['institutionCode'])) {
+        if ((bool) isset($institutionData['institutionCode'])) {
             if ($this->institutionRepository->isInstitutionCodeExists($institutionData['institutionCode'], $institutionId)) {
                 throw new \InvalidArgumentException('机构代码已存在');
             }
             $institution->setInstitutionCode($institutionData['institutionCode']);
         }
-        if (isset($institutionData['institutionType'])) {
+        if ((bool) isset($institutionData['institutionType'])) {
             $institution->setInstitutionType($institutionData['institutionType']);
         }
-        if (isset($institutionData['legalPerson'])) {
+        if ((bool) isset($institutionData['legalPerson'])) {
             $institution->setLegalPerson($institutionData['legalPerson']);
         }
-        if (isset($institutionData['contactPerson'])) {
+        if ((bool) isset($institutionData['contactPerson'])) {
             $institution->setContactPerson($institutionData['contactPerson']);
         }
-        if (isset($institutionData['contactPhone'])) {
+        if ((bool) isset($institutionData['contactPhone'])) {
             $institution->setContactPhone($institutionData['contactPhone']);
         }
-        if (isset($institutionData['contactEmail'])) {
+        if ((bool) isset($institutionData['contactEmail'])) {
             $institution->setContactEmail($institutionData['contactEmail']);
         }
-        if (isset($institutionData['address'])) {
+        if ((bool) isset($institutionData['address'])) {
             $institution->setAddress($institutionData['address']);
         }
-        if (isset($institutionData['businessScope'])) {
+        if ((bool) isset($institutionData['businessScope'])) {
             $institution->setBusinessScope($institutionData['businessScope']);
         }
 
@@ -190,7 +190,7 @@ class InstitutionService
         ];
 
         foreach ($requiredFields as $field => $label) {
-            if (empty($institutionData[$field])) {
+            if ((bool) empty($institutionData[$field])) {
                 $errors[] = "{$label}不能为空";
             }
         }

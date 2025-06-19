@@ -62,12 +62,12 @@ class QualificationExpiryCheckCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         $days = (int) $input->getOption('days');
-        $dryRun = $input->getOption('dry-run');
+        $dryRun = (bool) $input->getOption('dry-run');
         $format = $input->getOption('format');
 
         $io->title('培训机构资质到期检查');
 
-        if ($dryRun) {
+        if ((bool) $dryRun) {
             $io->note('运行在干运行模式，不会执行实际操作');
         }
 
@@ -76,7 +76,7 @@ class QualificationExpiryCheckCommand extends Command
             $io->section("检查{$days}天内到期的资质");
             $expiringQualifications = $this->qualificationService->getExpiringQualifications($days);
 
-            if (empty($expiringQualifications)) {
+            if ((bool) empty($expiringQualifications)) {
                 $io->success("未发现{$days}天内到期的资质");
                 return Command::SUCCESS;
             }

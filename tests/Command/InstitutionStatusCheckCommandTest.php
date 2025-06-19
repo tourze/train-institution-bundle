@@ -402,7 +402,8 @@ class InstitutionStatusCheckCommandTest extends TestCase
         $this->assertEquals(Command::FAILURE, $exitCode);
         $output = $this->commandTester->getDisplay();
         $this->assertStringContainsString('执行过程中发生错误', $output);
-        $this->assertStringContainsString('数据库连接失败', $output);
+        $this->// TODO: 检查断言的期望值是否正确
+        assertStringContainsString('数据库连接失败', $output);
     }
 
     /**

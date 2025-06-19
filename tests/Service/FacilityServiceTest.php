@@ -186,8 +186,6 @@ class FacilityServiceTest extends TestCase
             ->willReturn(220.5);
 
         $result = $this->facilityService->validateFacilityRequirements($institutionId);
-
-        $this->assertIsArray($result);
         $this->assertArrayHasKey('facilities', $result);
         $this->assertArrayHasKey('overall_compliant', $result);
         $this->assertArrayHasKey('facility_counts', $result);
@@ -232,8 +230,6 @@ class FacilityServiceTest extends TestCase
             ->willReturn(120.5);
 
         $report = $this->facilityService->generateFacilityReport($institutionId);
-
-        $this->assertIsArray($report);
         $this->assertArrayHasKey('institution', $report);
         $this->assertArrayHasKey('summary', $report);
         $this->assertEquals('测试机构', $report['institution']['name']);

@@ -344,7 +344,7 @@ class ChangeRecordService
         ];
 
         foreach ($requiredFields as $field => $label) {
-            if (empty($changeData[$field])) {
+            if ((bool) empty($changeData[$field])) {
                 $errors[] = "{$label}不能为空";
             }
         }
