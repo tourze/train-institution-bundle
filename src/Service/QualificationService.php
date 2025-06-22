@@ -33,7 +33,7 @@ class QualificationService
 
         // 获取机构
         $institution = $this->institutionRepository->find($institutionId);
-        if (!$institution) {
+        if ($institution === null) {
             throw new \InvalidArgumentException('机构不存在');
         }
 
@@ -47,8 +47,7 @@ class QualificationService
             throw new \InvalidArgumentException('有效期开始日期必须早于结束日期');
         }
 
-        $qualification = new InstitutionQualification(
-            $qualificationData['id'],
+        $qualification = InstitutionQualification::create(
             $institution,
             $qualificationData['qualificationType'],
             $qualificationData['qualificationName'],
@@ -74,42 +73,42 @@ class QualificationService
     public function updateQualification(string $qualificationId, array $qualificationData): InstitutionQualification
     {
         $qualification = $this->qualificationRepository->find($qualificationId);
-        if (!$qualification) {
+        if ($qualification === null) {
             throw new \InvalidArgumentException('资质不存在');
         }
 
         // 更新字段
-        if ((bool) isset($qualificationData['qualificationType'])) {
+        if (isset($qualificationData['qualificationType'])) {
             $qualification->setQualificationType($qualificationData['qualificationType']);
         }
-        if ((bool) isset($qualificationData['qualificationName'])) {
+        if (isset($qualificationData['qualificationName'])) {
             $qualification->setQualificationName($qualificationData['qualificationName']);
         }
-        if ((bool) isset($qualificationData['certificateNumber'])) {
+        if (isset($qualificationData['certificateNumber'])) {
             if ($this->qualificationRepository->isCertificateNumberExists($qualificationData['certificateNumber'], $qualificationId)) {
                 throw new \InvalidArgumentException('证书编号已存在');
             }
             $qualification->setCertificateNumber($qualificationData['certificateNumber']);
         }
-        if ((bool) isset($qualificationData['issuingAuthority'])) {
+        if (isset($qualificationData['issuingAuthority'])) {
             $qualification->setIssuingAuthority($qualificationData['issuingAuthority']);
         }
-        if ((bool) isset($qualificationData['issueDate'])) {
+        if (isset($qualificationData['issueDate'])) {
             $qualification->setIssueDate($qualificationData['issueDate']);
         }
-        if ((bool) isset($qualificationData['validFrom'])) {
+        if (isset($qualificationData['validFrom'])) {
             $qualification->setValidFrom($qualificationData['validFrom']);
         }
-        if ((bool) isset($qualificationData['validTo'])) {
+        if (isset($qualificationData['validTo'])) {
             $qualification->setValidTo($qualificationData['validTo']);
         }
-        if ((bool) isset($qualificationData['qualificationScope'])) {
+        if (isset($qualificationData['qualificationScope'])) {
             $qualification->setQualificationScope($qualificationData['qualificationScope']);
         }
-        if ((bool) isset($qualificationData['qualificationStatus'])) {
+        if (isset($qualificationData['qualificationStatus'])) {
             $qualification->setQualificationStatus($qualificationData['qualificationStatus']);
         }
-        if ((bool) isset($qualificationData['attachments'])) {
+        if (isset($qualificationData['attachments'])) {
             $qualification->setAttachments($qualificationData['attachments']);
         }
 
@@ -129,7 +128,7 @@ class QualificationService
     public function checkQualificationExpiry(string $institutionId): array
     {
         $institution = $this->institutionRepository->find($institutionId);
-        if (!$institution) {
+        if ($institution === null) {
             throw new \InvalidArgumentException('机构不存在');
         }
 
@@ -165,7 +164,7 @@ class QualificationService
     public function renewQualification(string $qualificationId, array $renewalData): InstitutionQualification
     {
         $qualification = $this->qualificationRepository->find($qualificationId);
-        if (!$qualification) {
+        if ($qualification === null) {
             throw new \InvalidArgumentException('资质不存在');
         }
 
@@ -188,16 +187,16 @@ class QualificationService
         $qualification->renew($newValidTo, $newCertificateNumber);
 
         // 更新其他信息
-        if ((bool) isset($renewalData['issuingAuthority'])) {
+        if (isset($renewalData['issuingAuthority'])) {
             $qualification->setIssuingAuthority($renewalData['issuingAuthority']);
         }
-        if ((bool) isset($renewalData['issueDate'])) {
+        if (isset($renewalData['issueDate'])) {
             $qualification->setIssueDate($renewalData['issueDate']);
         }
-        if ((bool) isset($renewalData['qualificationScope'])) {
+        if (isset($renewalData['qualificationScope'])) {
             $qualification->setQualificationScope($renewalData['qualificationScope']);
         }
-        if ((bool) isset($renewalData['attachments'])) {
+        if (isset($renewalData['attachments'])) {
             $qualification->setAttachments($renewalData['attachments']);
         }
 
@@ -220,7 +219,7 @@ class QualificationService
     public function validateQualificationScope(string $qualificationId, array $scope): bool
     {
         $qualification = $this->qualificationRepository->find($qualificationId);
-        if (!$qualification) {
+        if ($qualification === null) {
             throw new \InvalidArgumentException('资质不存在');
         }
 
@@ -269,7 +268,7 @@ class QualificationService
     public function revokeQualification(string $qualificationId, string $reason): InstitutionQualification
     {
         $qualification = $this->qualificationRepository->find($qualificationId);
-        if (!$qualification) {
+        if ($qualification === null) {
             throw new \InvalidArgumentException('资质不存在');
         }
 
@@ -285,7 +284,7 @@ class QualificationService
     public function suspendQualification(string $qualificationId, string $reason): InstitutionQualification
     {
         $qualification = $this->qualificationRepository->find($qualificationId);
-        if (!$qualification) {
+        if ($qualification === null) {
             throw new \InvalidArgumentException('资质不存在');
         }
 
@@ -301,7 +300,7 @@ class QualificationService
     public function restoreQualification(string $qualificationId): InstitutionQualification
     {
         $qualification = $this->qualificationRepository->find($qualificationId);
-        if (!$qualification) {
+        if ($qualification === null) {
             throw new \InvalidArgumentException('资质不存在');
         }
 
@@ -351,20 +350,4 @@ class QualificationService
         if (!empty($errors)) {
             throw new \InvalidArgumentException(implode('；', $errors));
         }
-    }
-
-    /**
-     * 生成ID
-     */
-    private function generateId(): string
-    {
-        return sprintf(
-            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-            mt_rand(0, 0xffff),
-            mt_rand(0, 0x0fff) | 0x4000,
-            mt_rand(0, 0x3fff) | 0x8000,
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
-        );
-    }
-} 
+    }}

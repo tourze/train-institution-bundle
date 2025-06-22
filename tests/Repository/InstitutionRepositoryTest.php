@@ -26,8 +26,9 @@ class InstitutionRepositoryTest extends KernelTestCase
     protected function setUp(): void
     {
         $kernel = self::bootKernel();
-        $this->entityManager = $kernel->getContainer()->get('doctrine')->getManager();
-        $this->repository = $this->entityManager->getRepository(Institution::class);
+        $this->entityManager = $kernel->getContainer()->get('doctrine')->getManager();        $repository = $this->entityManager->getRepository(Institution::class);
+        $this->assertInstanceOf(InstitutionRepository::class, $repository);
+        $this->repository = $repository;
 
         // 创建数据库表结构
         $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($this->entityManager);

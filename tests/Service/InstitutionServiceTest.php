@@ -8,7 +8,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Tourze\TrainInstitutionBundle\Entity\Institution;
-use Tourze\TrainInstitutionBundle\Repository\InstitutionChangeRecordRepository;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
 use Tourze\TrainInstitutionBundle\Service\InstitutionService;
 
@@ -19,19 +18,16 @@ class InstitutionServiceTest extends TestCase
 {
     private MockObject&EntityManagerInterface $entityManager;
     private MockObject&InstitutionRepository $institutionRepository;
-    private MockObject&InstitutionChangeRecordRepository $changeRecordRepository;
     private InstitutionService $institutionService;
 
     protected function setUp(): void
     {
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->institutionRepository = $this->createMock(InstitutionRepository::class);
-        $this->changeRecordRepository = $this->createMock(InstitutionChangeRecordRepository::class);
 
         $this->institutionService = new InstitutionService(
             $this->entityManager,
-            $this->institutionRepository,
-            $this->changeRecordRepository
+            $this->institutionRepository
         );
     }
 

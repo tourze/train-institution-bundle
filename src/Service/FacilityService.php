@@ -33,12 +33,11 @@ class FacilityService
 
         // 获取机构
         $institution = $this->institutionRepository->find($institutionId);
-        if (!$institution) {
+        if ($institution === null) {
             throw new \InvalidArgumentException('机构不存在');
         }
 
-        $facility = new InstitutionFacility(
-            $facilityData['id'],
+        $facility = InstitutionFacility::create(
             $institution,
             $facilityData['facilityType'],
             $facilityData['facilityName'],
@@ -70,39 +69,39 @@ class FacilityService
     public function updateFacility(string $facilityId, array $facilityData): InstitutionFacility
     {
         $facility = $this->facilityRepository->find($facilityId);
-        if (!$facility) {
+        if ($facility === null) {
             throw new \InvalidArgumentException('设施不存在');
         }
 
         // 更新字段
-        if ((bool) isset($facilityData['facilityType'])) {
+        if (isset($facilityData['facilityType'])) {
             $facility->setFacilityType($facilityData['facilityType']);
         }
-        if ((bool) isset($facilityData['facilityName'])) {
+        if (isset($facilityData['facilityName'])) {
             $facility->setFacilityName($facilityData['facilityName']);
         }
-        if ((bool) isset($facilityData['facilityLocation'])) {
+        if (isset($facilityData['facilityLocation'])) {
             $facility->setFacilityLocation($facilityData['facilityLocation']);
         }
-        if ((bool) isset($facilityData['facilityArea'])) {
+        if (isset($facilityData['facilityArea'])) {
             $facility->setFacilityArea($facilityData['facilityArea']);
         }
-        if ((bool) isset($facilityData['capacity'])) {
+        if (isset($facilityData['capacity'])) {
             $facility->setCapacity($facilityData['capacity']);
         }
-        if ((bool) isset($facilityData['equipmentList'])) {
+        if (isset($facilityData['equipmentList'])) {
             $facility->setEquipmentList($facilityData['equipmentList']);
         }
-        if ((bool) isset($facilityData['safetyEquipment'])) {
+        if (isset($facilityData['safetyEquipment'])) {
             $facility->setSafetyEquipment($facilityData['safetyEquipment']);
         }
-        if ((bool) isset($facilityData['facilityStatus'])) {
+        if (isset($facilityData['facilityStatus'])) {
             $facility->setFacilityStatus($facilityData['facilityStatus']);
         }
-        if ((bool) isset($facilityData['lastInspectionDate'])) {
+        if (isset($facilityData['lastInspectionDate'])) {
             $facility->setLastInspectionDate($facilityData['lastInspectionDate']);
         }
-        if ((bool) isset($facilityData['nextInspectionDate'])) {
+        if (isset($facilityData['nextInspectionDate'])) {
             $facility->setNextInspectionDate($facilityData['nextInspectionDate']);
         }
 
@@ -117,7 +116,7 @@ class FacilityService
     public function scheduleFacilityInspection(string $facilityId, \DateTimeImmutable $inspectionDate): void
     {
         $facility = $this->facilityRepository->find($facilityId);
-        if (!$facility) {
+        if ($facility === null) {
             throw new \InvalidArgumentException('设施不存在');
         }
 
@@ -131,7 +130,7 @@ class FacilityService
     public function completeFacilityInspection(string $facilityId, \DateTimeImmutable $inspectionDate, \DateTimeImmutable $nextInspectionDate): InstitutionFacility
     {
         $facility = $this->facilityRepository->find($facilityId);
-        if (!$facility) {
+        if ($facility === null) {
             throw new \InvalidArgumentException('设施不存在');
         }
 
@@ -147,7 +146,7 @@ class FacilityService
     public function getFacilityUtilization(string $facilityId): array
     {
         $facility = $this->facilityRepository->find($facilityId);
-        if (!$facility) {
+        if ($facility === null) {
             throw new \InvalidArgumentException('设施不存在');
         }
 
@@ -172,7 +171,7 @@ class FacilityService
     public function validateFacilityRequirements(string $institutionId): array
     {
         $institution = $this->institutionRepository->find($institutionId);
-        if (!$institution) {
+        if ($institution === null) {
             throw new \InvalidArgumentException('机构不存在');
         }
 
@@ -224,7 +223,7 @@ class FacilityService
     public function generateFacilityReport(string $institutionId): array
     {
         $institution = $this->institutionRepository->find($institutionId);
-        if (!$institution) {
+        if ($institution === null) {
             throw new \InvalidArgumentException('机构不存在');
         }
 
@@ -326,7 +325,7 @@ class FacilityService
     public function addEquipmentToFacility(string $facilityId, array $equipment): InstitutionFacility
     {
         $facility = $this->facilityRepository->find($facilityId);
-        if (!$facility) {
+        if ($facility === null) {
             throw new \InvalidArgumentException('设施不存在');
         }
 
@@ -342,7 +341,7 @@ class FacilityService
     public function addSafetyEquipmentToFacility(string $facilityId, array $safetyEquipment): InstitutionFacility
     {
         $facility = $this->facilityRepository->find($facilityId);
-        if (!$facility) {
+        if ($facility === null) {
             throw new \InvalidArgumentException('设施不存在');
         }
 
@@ -392,20 +391,4 @@ class FacilityService
         if (!empty($errors)) {
             throw new \InvalidArgumentException(implode('；', $errors));
         }
-    }
-
-    /**
-     * 生成ID
-     */
-    private function generateId(): string
-    {
-        return sprintf(
-            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-            mt_rand(0, 0xffff),
-            mt_rand(0, 0x0fff) | 0x4000,
-            mt_rand(0, 0x3fff) | 0x8000,
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
-        );
-    }
-} 
+    }}

@@ -7,6 +7,7 @@ namespace Tourze\TrainInstitutionBundle\Entity;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Stringable;
+use Tourze\TrainInstitutionBundle\Repository\InstitutionFacilityRepository;
 
 /**
  * 机构设施实体
@@ -14,100 +15,52 @@ use Stringable;
  * 管理培训机构的场地设施信息，包括教室、实训场地、办公区域等
  * 符合AQ8011-2023对培训场地和设施的要求
  */
-#[ORM\Entity(repositoryClass: 'Tourze\TrainInstitutionBundle\Repository\InstitutionFacilityRepository')]
+#[ORM\Entity(repositoryClass: InstitutionFacilityRepository::class)]
 #[ORM\Table(name: 'train_institution_facility', options: ['comment' => '表描述'])]
-#[ORM\HasLifecycleCallbacks]
 class InstitutionFacility implements Stringable
 {
-    /**
-     * 设施ID
-     */
     #[ORM\Id]
-#[ORM\Column(type: Types::STRING, length: 36, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::STRING, length: 36, options: ['comment' => '设施ID'])]
     private readonly string $id;
 
-    /**
-     * 所属机构
-     */
     #[ORM\ManyToOne(targetEntity: Institution::class, inversedBy: 'facilities')]
     #[ORM\JoinColumn(nullable: false)]
     private Institution $institution;
 
-    /**
-     * 设施类型
-     * 如：教室、实训场地、办公区域、会议室、图书馆等
-     */
-#[ORM\Column(type: Types::STRING, length: 50, options: ['comment' => '字段说明'])]
+        #[ORM\Column(type: Types::STRING, length: 50, options: ['comment' => '设施类型：教室、实训场地、办公区域、会议室、图书馆等'])]
     private string $facilityType;
 
-    /**
-     * 设施名称
-     */
-#[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '字段说明'])]
+        #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '设施名称'])]
     private string $facilityName;
 
-    /**
-     * 设施位置
-     * 详细的位置描述，如楼层、房间号等
-     */
-#[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '字段说明'])]
+        #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '设施位置：详细的位置描述，如楼层、房间号等'])]
     private string $facilityLocation;
 
-    /**
-     * 设施面积（平方米）
-     */
-#[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['comment' => '字段说明'])]
+        #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['comment' => '设施面积（平方米）'])]
     private float $facilityArea;
 
-    /**
-     * 容纳人数
-     */
-#[ORM\Column(type: Types::INTEGER, options: ['comment' => '字段说明'])]
+        #[ORM\Column(type: Types::INTEGER, options: ['comment' => '容纳人数'])]
     private int $capacity;
 
-    /**
-     * 设备清单
-     * JSON格式存储设施内的设备信息
-     */
-#[ORM\Column(type: Types::JSON, options: ['comment' => '字段说明'])]
+        #[ORM\Column(type: Types::JSON, options: ['comment' => '设备清单：JSON格式存储设施内的设备信息'])]
     private array $equipmentList;
 
-    /**
-     * 安全设备
-     * JSON格式存储消防、安全等设备信息
-     */
-#[ORM\Column(type: Types::JSON, options: ['comment' => '字段说明'])]
+        #[ORM\Column(type: Types::JSON, options: ['comment' => '安全设备：JSON格式存储消防、安全等设备信息'])]
     private array $safetyEquipment;
 
-    /**
-     * 设施状态
-     * 如：正常使用、维修中、停用、待检查等
-     */
-#[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '字段说明'])]
+        #[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '设施状态：正常使用、维修中、停用、待检查等'])]
     private string $facilityStatus;
 
-    /**
-     * 最后检查日期
-     */
-#[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true, options: ['comment' => '字段说明'])]
+        #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true, options: ['comment' => '最后检查日期'])]
     private ?\DateTimeImmutable $lastInspectionDate;
 
-    /**
-     * 下次检查日期
-     */
-#[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true, options: ['comment' => '字段说明'])]
+        #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true, options: ['comment' => '下次检查日期'])]
     private ?\DateTimeImmutable $nextInspectionDate;
 
-    /**
-     * 创建时间
-     */
-#[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '字段说明'])]
+        #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '创建时间'])]
     private \DateTimeImmutable $createTime;
 
-    /**
-     * 更新时间
-     */
-#[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '字段说明'])]
+        #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '更新时间'])]
     private \DateTimeImmutable $updateTime;
 
     public function __construct()
@@ -350,11 +303,11 @@ class InstitutionFacility implements Stringable
     public function hasSafetyEquipment(string $equipmentName): bool
     {
         foreach ($this->safetyEquipment as $equipment) {
-            if ((bool) is_array($equipment) && isset($equipment['name'])) {
+            if (is_array($equipment) && isset($equipment['name'])) {
                 if ($equipment['name'] === $equipmentName) {
                     return true;
                 }
-            } elseif ((bool) is_string($equipment) && $equipment === $equipmentName) {
+            } elseif (is_string($equipment) && $equipment === $equipmentName) {
                 return true;
             }
         }
@@ -422,12 +375,6 @@ class InstitutionFacility implements Stringable
         $this->nextInspectionDate = $nextInspectionDate;
         $this->updateTime = new \DateTimeImmutable();
         return $this;
-    }
-
-    #[ORM\PreUpdate]
-    public function preUpdate(): void
-    {
-        $this->updateTime = new \DateTimeImmutable();
     }
 
     public function __toString(): string

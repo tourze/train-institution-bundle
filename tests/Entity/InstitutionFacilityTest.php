@@ -605,24 +605,7 @@ class InstitutionFacilityTest extends TestCase
         $this->assertSame($inspectionDate, $facility->getLastInspectionDate());
         $this->assertSame($nextInspectionDate, $facility->getNextInspectionDate());
         $this->assertGreaterThan($originalUpdateTime, $facility->getUpdateTime());
-    }
-
-    /**
-     * 测试preUpdate生命周期回调
-     */
-    public function test_preUpdate_updatesUpdateTime(): void
-    {
-        $facility = new InstitutionFacility();
-        $originalUpdateTime = $facility->getUpdateTime();
-        
-        usleep(1000);
-        
-        $facility->preUpdate();
-
-        $this->assertGreaterThan($originalUpdateTime, $facility->getUpdateTime());
-    }
-
-    /**
+    }/**
      * 测试边界条件 - 零面积
      */
     public function test_setFacilityArea_withZeroArea(): void

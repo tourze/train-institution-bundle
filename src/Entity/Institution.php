@@ -427,12 +427,6 @@ class Institution implements Stringable
         });
     }
 
-    #[ORM\PreUpdate]
-    public function preUpdate(): void
-    {
-        $this->updateTime = new \DateTimeImmutable();
-    }
-
     public function __toString(): string
     {
         return (string) $this->id;

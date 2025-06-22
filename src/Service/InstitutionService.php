@@ -7,7 +7,6 @@ namespace Tourze\TrainInstitutionBundle\Service;
 use Doctrine\ORM\EntityManagerInterface;
 use Tourze\TrainInstitutionBundle\Entity\Institution;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionChangeRecord;
-use Tourze\TrainInstitutionBundle\Repository\InstitutionChangeRecordRepository;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
 
 /**
@@ -19,8 +18,7 @@ class InstitutionService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly InstitutionRepository $institutionRepository,
-        private readonly InstitutionChangeRecordRepository $changeRecordRepository
+        private readonly InstitutionRepository $institutionRepository
     ) {
     }
 
@@ -70,7 +68,7 @@ class InstitutionService
     public function updateInstitution(string $institutionId, array $institutionData): Institution
     {
         $institution = $this->getInstitutionById($institutionId);
-        if (!$institution) {
+        if ($institution === null) {
             throw new \InvalidArgumentException('机构不存在');
         }
 
@@ -88,34 +86,34 @@ class InstitutionService
         ];
 
         // 更新字段
-        if ((bool) isset($institutionData['institutionName'])) {
+        if (isset($institutionData['institutionName'])) {
             $institution->setInstitutionName($institutionData['institutionName']);
         }
-        if ((bool) isset($institutionData['institutionCode'])) {
+        if (isset($institutionData['institutionCode'])) {
             if ($this->institutionRepository->isInstitutionCodeExists($institutionData['institutionCode'], $institutionId)) {
                 throw new \InvalidArgumentException('机构代码已存在');
             }
             $institution->setInstitutionCode($institutionData['institutionCode']);
         }
-        if ((bool) isset($institutionData['institutionType'])) {
+        if (isset($institutionData['institutionType'])) {
             $institution->setInstitutionType($institutionData['institutionType']);
         }
-        if ((bool) isset($institutionData['legalPerson'])) {
+        if (isset($institutionData['legalPerson'])) {
             $institution->setLegalPerson($institutionData['legalPerson']);
         }
-        if ((bool) isset($institutionData['contactPerson'])) {
+        if (isset($institutionData['contactPerson'])) {
             $institution->setContactPerson($institutionData['contactPerson']);
         }
-        if ((bool) isset($institutionData['contactPhone'])) {
+        if (isset($institutionData['contactPhone'])) {
             $institution->setContactPhone($institutionData['contactPhone']);
         }
-        if ((bool) isset($institutionData['contactEmail'])) {
+        if (isset($institutionData['contactEmail'])) {
             $institution->setContactEmail($institutionData['contactEmail']);
         }
-        if ((bool) isset($institutionData['address'])) {
+        if (isset($institutionData['address'])) {
             $institution->setAddress($institutionData['address']);
         }
-        if ((bool) isset($institutionData['businessScope'])) {
+        if (isset($institutionData['businessScope'])) {
             $institution->setBusinessScope($institutionData['businessScope']);
         }
 
@@ -190,7 +188,7 @@ class InstitutionService
         ];
 
         foreach ($requiredFields as $field => $label) {
-            if ((bool) empty($institutionData[$field])) {
+            if (empty($institutionData[$field])) {
                 $errors[] = "{$label}不能为空";
             }
         }
@@ -218,7 +216,7 @@ class InstitutionService
     public function changeInstitutionStatus(string $institutionId, string $status, string $reason): Institution
     {
         $institution = $this->getInstitutionById($institutionId);
-        if (!$institution) {
+        if ($institution === null) {
             throw new \InvalidArgumentException('机构不存在');
         }
 
@@ -248,7 +246,7 @@ class InstitutionService
     public function checkInstitutionCompliance(string $institutionId): array
     {
         $institution = $this->getInstitutionById($institutionId);
-        if (!$institution) {
+        if ($institution === null) {
             throw new \InvalidArgumentException('机构不存在');
         }
 
@@ -309,19 +307,4 @@ class InstitutionService
     {
         return $this->institutionRepository->findPaginated($page, $limit, $criteria);
     }
-
-    /**
-     * 生成ID
-     */
-    private function generateId(): string
-    {
-        return sprintf(
-            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-            mt_rand(0, 0xffff),
-            mt_rand(0, 0x0fff) | 0x4000,
-            mt_rand(0, 0x3fff) | 0x8000,
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
-        );
-    }
-} 
+}

@@ -7,106 +7,60 @@ namespace Tourze\TrainInstitutionBundle\Entity;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Stringable;
+use Tourze\TrainInstitutionBundle\Repository\InstitutionQualificationRepository;
 
 /**
  * 机构资质实体
- * 
+ *
  * 管理培训机构的各类资质证书，包括办学许可证、安全培训资质等
  * 支持资质有效期监控和续期提醒功能
  */
-#[ORM\Entity(repositoryClass: 'Tourze\TrainInstitutionBundle\Repository\InstitutionQualificationRepository')]
+#[ORM\Entity(repositoryClass: InstitutionQualificationRepository::class)]
 #[ORM\Table(name: 'train_institution_qualification', options: ['comment' => '表描述'])]
-#[ORM\HasLifecycleCallbacks]
 class InstitutionQualification implements Stringable
 {
-    /**
-     * 资质ID
-     */
     #[ORM\Id]
-#[ORM\Column(type: Types::STRING, length: 36, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::STRING, length: 36, options: ['comment' => '资质ID'])]
     private readonly string $id;
 
-    /**
-     * 所属机构
-     */
     #[ORM\ManyToOne(targetEntity: Institution::class, inversedBy: 'qualifications')]
     #[ORM\JoinColumn(nullable: false)]
     private Institution $institution;
 
-    /**
-     * 资质类型
-     * 如：办学许可证、安全培训资质、特种作业培训资质等
-     */
-#[ORM\Column(type: Types::STRING, length: 100, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::STRING, length: 100, options: ['comment' => '资质类型：办学许可证、安全培训资质、特种作业培训资质等'])]
     private string $qualificationType;
 
-    /**
-     * 资质名称
-     */
-#[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '资质名称'])]
     private string $qualificationName;
 
-    /**
-     * 证书编号
-     */
-#[ORM\Column(type: Types::STRING, length: 100, unique: true, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::STRING, length: 100, unique: true, options: ['comment' => '证书编号'])]
     private string $certificateNumber;
 
-    /**
-     * 发证机关
-     */
-#[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '发证机关'])]
     private string $issuingAuthority;
 
-    /**
-     * 发证日期
-     */
-#[ORM\Column(type: Types::DATE_IMMUTABLE, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::DATE_IMMUTABLE, options: ['comment' => '发证日期'])]
     private \DateTimeImmutable $issueDate;
 
-    /**
-     * 有效期开始日期
-     */
-#[ORM\Column(type: Types::DATE_IMMUTABLE, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::DATE_IMMUTABLE, options: ['comment' => '有效期开始日期'])]
     private \DateTimeImmutable $validFrom;
 
-    /**
-     * 有效期结束日期
-     */
-#[ORM\Column(type: Types::DATE_IMMUTABLE, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::DATE_IMMUTABLE, options: ['comment' => '有效期结束日期'])]
     private \DateTimeImmutable $validTo;
 
-    /**
-     * 资质范围
-     * JSON格式存储资质适用的培训范围
-     */
-#[ORM\Column(type: Types::JSON, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::JSON, options: ['comment' => '资质范围：JSON格式存储资质适用的培训范围'])]
     private array $qualificationScope;
 
-    /**
-     * 资质状态
-     * 如：有效、已过期、已撤销、暂停等
-     */
-#[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '资质状态：有效、已过期、已撤销、暂停等'])]
     private string $qualificationStatus;
 
-    /**
-     * 附件信息
-     * JSON格式存储证书扫描件等附件信息
-     */
-#[ORM\Column(type: Types::JSON, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::JSON, options: ['comment' => '附件信息：JSON格式存储证书扫描件等附件信息'])]
     private array $attachments;
 
-    /**
-     * 创建时间
-     */
-#[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '创建时间'])]
     private \DateTimeImmutable $createTime;
 
-    /**
-     * 更新时间
-     */
-#[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '更新时间'])]
     private \DateTimeImmutable $updateTime;
 
     public function __construct()
@@ -123,18 +77,19 @@ class InstitutionQualification implements Stringable
      * 创建新的机构资质实例
      */
     public static function create(
-        Institution $institution,
-        string $qualificationType,
-        string $qualificationName,
-        string $certificateNumber,
-        string $issuingAuthority,
+        Institution        $institution,
+        string             $qualificationType,
+        string             $qualificationName,
+        string             $certificateNumber,
+        string             $issuingAuthority,
         \DateTimeImmutable $issueDate,
         \DateTimeImmutable $validFrom,
         \DateTimeImmutable $validTo,
-        array $qualificationScope = [],
-        string $qualificationStatus = '有效',
-        array $attachments = []
-    ): self {
+        array              $qualificationScope = [],
+        string             $qualificationStatus = '有效',
+        array              $attachments = []
+    ): self
+    {
         $qualification = new self();
         $qualification->institution = $institution;
         $qualification->qualificationType = $qualificationType;
@@ -147,7 +102,7 @@ class InstitutionQualification implements Stringable
         $qualification->qualificationScope = $qualificationScope;
         $qualification->qualificationStatus = $qualificationStatus;
         $qualification->attachments = $attachments;
-        
+
         return $qualification;
     }
 
@@ -304,8 +259,8 @@ class InstitutionQualification implements Stringable
     public function isValid(): bool
     {
         $now = new \DateTimeImmutable();
-        return $this->qualificationStatus === '有效' 
-            && $this->validFrom <= $now 
+        return $this->qualificationStatus === '有效'
+            && $this->validFrom <= $now
             && $this->validTo > $now;
     }
 
@@ -327,7 +282,7 @@ class InstitutionQualification implements Stringable
         if ($this->validTo <= $now) {
             return 0;
         }
-        
+
         return $now->diff($this->validTo)->days;
     }
 
@@ -350,18 +305,12 @@ class InstitutionQualification implements Stringable
         }
         $this->qualificationStatus = '有效';
         $this->updateTime = new \DateTimeImmutable();
-        
-        return $this;
-    }
 
-    #[ORM\PreUpdate]
-    public function preUpdate(): void
-    {
-        $this->updateTime = new \DateTimeImmutable();
+        return $this;
     }
 
     public function __toString(): string
     {
-        return (string) $this->id;
+        return (string)$this->id;
     }
 } 

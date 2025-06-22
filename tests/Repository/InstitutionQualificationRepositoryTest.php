@@ -28,8 +28,9 @@ class InstitutionQualificationRepositoryTest extends KernelTestCase
     protected function setUp(): void
     {
         $kernel = self::bootKernel();
-        $this->entityManager = $kernel->getContainer()->get('doctrine')->getManager();
-        $this->repository = $this->entityManager->getRepository(InstitutionQualification::class);
+        $this->entityManager = $kernel->getContainer()->get('doctrine')->getManager();        $repository = $this->entityManager->getRepository(InstitutionQualification::class);
+        $this->assertInstanceOf(InstitutionQualificationRepository::class, $repository);
+        $this->repository = $repository;
 
         // 创建数据库表结构
         $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($this->entityManager);
@@ -73,8 +74,8 @@ class InstitutionQualificationRepositoryTest extends KernelTestCase
         string $type = '安全培训资质',
         string $name = '安全生产培训机构资质证书',
         string $certNumber = 'CERT001',
-        ?\DateTimeInterface $validFrom = null,
-        ?\DateTimeInterface $validTo = null,
+        ?\DateTimeImmutable $validFrom = null,
+        ?\DateTimeImmutable $validTo = null,
         string $status = '有效',
         array $scope = ['特种作业培训']
     ): InstitutionQualification {

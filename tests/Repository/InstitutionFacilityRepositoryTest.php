@@ -28,8 +28,9 @@ class InstitutionFacilityRepositoryTest extends KernelTestCase
     protected function setUp(): void
     {
         $kernel = self::bootKernel();
-        $this->entityManager = $kernel->getContainer()->get('doctrine')->getManager();
-        $this->repository = $this->entityManager->getRepository(InstitutionFacility::class);
+        $this->entityManager = $kernel->getContainer()->get('doctrine')->getManager();        $repository = $this->entityManager->getRepository(InstitutionFacility::class);
+        $this->assertInstanceOf(InstitutionFacilityRepository::class, $repository);
+        $this->repository = $repository;
 
         // 创建数据库表结构
         $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($this->entityManager);
@@ -76,7 +77,7 @@ class InstitutionFacilityRepositoryTest extends KernelTestCase
         float $area = 80.0,
         int $capacity = 50,
         string $status = '正常使用',
-        ?\DateTimeInterface $nextInspectionDate = null
+        ?\DateTimeImmutable $nextInspectionDate = null
     ): InstitutionFacility {
         $facility = InstitutionFacility::create(
             $this->testInstitution,

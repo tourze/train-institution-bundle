@@ -614,24 +614,7 @@ class InstitutionQualificationTest extends TestCase
         $this->assertEquals($newCertNumber, $qualification->getCertificateNumber());
         $this->assertEquals('有效', $qualification->getQualificationStatus());
         $this->assertGreaterThan($originalUpdateTime, $qualification->getUpdateTime());
-    }
-
-    /**
-     * 测试preUpdate生命周期回调
-     */
-    public function test_preUpdate_updatesUpdateTime(): void
-    {
-        $qualification = new InstitutionQualification();
-        $originalUpdateTime = $qualification->getUpdateTime();
-        
-        usleep(1000);
-        
-        $qualification->preUpdate();
-
-        $this->assertGreaterThan($originalUpdateTime, $qualification->getUpdateTime());
-    }
-
-    /**
+    }/**
      * 测试边界条件 - 当天到期
      */
     public function test_isValid_withExpiringToday(): void

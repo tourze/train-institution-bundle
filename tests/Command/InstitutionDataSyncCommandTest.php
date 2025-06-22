@@ -10,7 +10,6 @@ use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 use Tourze\TrainInstitutionBundle\Command\InstitutionDataSyncCommand;
-use Tourze\TrainInstitutionBundle\Entity\Institution;
 use Tourze\TrainInstitutionBundle\Service\InstitutionService;
 
 /**
@@ -30,22 +29,7 @@ class InstitutionDataSyncCommandTest extends TestCase
         $application = new Application();
         $application->add($this->command);
         $this->commandTester = new CommandTester($this->command);
-    }
-
-    /**
-     * 创建测试机构
-     */
-    private function createTestInstitution(): MockObject&Institution
-    {
-        $institution = $this->createMock(Institution::class);
-        $institution->method('getId')->willReturn('test-institution-id');
-        $institution->method('getInstitutionName')->willReturn('测试培训机构');
-        $institution->method('getInstitutionCode')->willReturn('TEST001');
-        
-        return $institution;
-    }
-
-    /**
+    }/**
      * 测试命令配置
      */
     public function test_commandConfiguration(): void

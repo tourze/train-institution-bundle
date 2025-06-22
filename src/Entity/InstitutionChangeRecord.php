@@ -7,53 +7,54 @@ namespace Tourze\TrainInstitutionBundle\Entity;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Stringable;
+use Tourze\TrainInstitutionBundle\Repository\InstitutionChangeRecordRepository;
 
 /**
  * 机构变更记录实体
  */
-#[ORM\Entity(repositoryClass: 'Tourze\TrainInstitutionBundle\Repository\InstitutionChangeRecordRepository')]
+#[ORM\Entity(repositoryClass: InstitutionChangeRecordRepository::class)]
 #[ORM\Table(name: 'train_institution_change_record', options: ['comment' => '表描述'])]
 class InstitutionChangeRecord implements Stringable
 {
     #[ORM\Id]
-#[ORM\Column(type: Types::STRING, length: 36, options: ['comment' => '字段说明'])]
+    #[ORM\Column(type: Types::STRING, length: 36, options: ['comment' => '记录ID'])]
     private readonly string $id;
 
     #[ORM\ManyToOne(targetEntity: Institution::class, inversedBy: 'changeRecords')]
     #[ORM\JoinColumn(nullable: false)]
     private Institution $institution;
 
-#[ORM\Column(type: Types::STRING, length: 50, options: ['comment' => '字段说明'])]
+#[ORM\Column(type: Types::STRING, length: 50, options: ['comment' => '变更类型'])]
     private string $changeType;
 
-#[ORM\Column(type: Types::JSON, options: ['comment' => '字段说明'])]
+#[ORM\Column(type: Types::JSON, options: ['comment' => '变更详情'])]
     private array $changeDetails;
 
-#[ORM\Column(type: Types::JSON, options: ['comment' => '字段说明'])]
+#[ORM\Column(type: Types::JSON, options: ['comment' => '变更前数据'])]
     private array $beforeData;
 
-#[ORM\Column(type: Types::JSON, options: ['comment' => '字段说明'])]
+#[ORM\Column(type: Types::JSON, options: ['comment' => '变更后数据'])]
     private array $afterData;
 
-#[ORM\Column(type: Types::TEXT, options: ['comment' => '字段说明'])]
+#[ORM\Column(type: Types::TEXT, options: ['comment' => '变更原因'])]
     private string $changeReason;
 
-#[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '字段说明'])]
+#[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '变更日期'])]
     private \DateTimeImmutable $changeDate;
 
-#[ORM\Column(type: Types::STRING, length: 100, options: ['comment' => '字段说明'])]
+#[ORM\Column(type: Types::STRING, length: 100, options: ['comment' => '变更操作人'])]
     private string $changeOperator;
 
-#[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '字段说明'])]
+#[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '审批状态'])]
     private string $approvalStatus;
 
-#[ORM\Column(type: Types::STRING, length: 100, nullable: true, options: ['comment' => '字段说明'])]
+#[ORM\Column(type: Types::STRING, length: 100, nullable: true, options: ['comment' => '审批人'])]
     private ?string $approver;
 
-#[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '字段说明'])]
+#[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true, options: ['comment' => '审批时间'])]
     private ?\DateTimeImmutable $approvalDate;
 
-#[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '字段说明'])]
+#[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '变更日期'])]
     private \DateTimeImmutable $createTime;
 
     public function __construct()
