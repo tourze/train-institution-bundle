@@ -6,12 +6,16 @@ namespace Tourze\TrainInstitutionBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionChangeRecord;
+use Tourze\TrainInstitutionBundle\Exception\ChangeRecordAlreadyProcessedException;
+use Tourze\TrainInstitutionBundle\Exception\ChangeRecordNotFoundException;
+use Tourze\TrainInstitutionBundle\Exception\InstitutionNotFoundException;
+use Tourze\TrainInstitutionBundle\Exception\InvalidChangeDataException;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionChangeRecordRepository;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
 
 /**
  * 机构变更记录服务
- * 
+ *
  * 提供培训机构变更记录的核心业务逻辑，包括变更记录、审批流程、历史查询等功能
  */
 class ChangeRecordService
@@ -34,7 +38,7 @@ class ChangeRecordService
         // 获取机构
         $institution = $this->institutionRepository->find($institutionId);
         if (!$institution) {
-            throw new \InvalidArgumentException('机构不存在');
+            throw new InstitutionNotFoundException($institutionId);
         }
 
         $changeRecord = InstitutionChangeRecord::create(
@@ -61,11 +65,11 @@ class ChangeRecordService
     {
         $changeRecord = $this->changeRecordRepository->find($recordId);
         if (!$changeRecord) {
-            throw new \InvalidArgumentException('变更记录不存在');
+            throw new ChangeRecordNotFoundException($recordId);
         }
 
         if ($changeRecord->getApprovalStatus() !== '待审批') {
-            throw new \InvalidArgumentException('该变更记录已处理，无法重复审批');
+            throw new ChangeRecordAlreadyProcessedException('审批');
         }
 
         $changeRecord->approve($approver);
@@ -81,11 +85,11 @@ class ChangeRecordService
     {
         $changeRecord = $this->changeRecordRepository->find($recordId);
         if (!$changeRecord) {
-            throw new \InvalidArgumentException('变更记录不存在');
+            throw new ChangeRecordNotFoundException($recordId);
         }
 
         if ($changeRecord->getApprovalStatus() !== '待审批') {
-            throw new \InvalidArgumentException('该变更记录已处理，无法重复拒绝');
+            throw new ChangeRecordAlreadyProcessedException('拒绝');
         }
 
         $changeRecord->reject($approver);
@@ -101,7 +105,7 @@ class ChangeRecordService
     {
         $institution = $this->institutionRepository->find($institutionId);
         if (!$institution) {
-            throw new \InvalidArgumentException('机构不存在');
+            throw new InstitutionNotFoundException($institutionId);
         }
 
         return $this->changeRecordRepository->findByInstitution($institution);
@@ -130,7 +134,7 @@ class ChangeRecordService
     {
         $institution = $this->institutionRepository->find($institutionId);
         if (!$institution) {
-            throw new \InvalidArgumentException('机构不存在');
+            throw new InstitutionNotFoundException($institutionId);
         }
 
         $changeRecords = $this->changeRecordRepository->findByInstitution($institution);
@@ -256,7 +260,7 @@ class ChangeRecordService
     {
         $changeRecord = $this->changeRecordRepository->find($recordId);
         if (!$changeRecord) {
-            throw new \InvalidArgumentException('变更记录不存在');
+            throw new ChangeRecordNotFoundException($recordId);
         }
 
         return [
@@ -286,7 +290,7 @@ class ChangeRecordService
     {
         $institution = $this->institutionRepository->find($institutionId);
         if (!$institution) {
-            throw new \InvalidArgumentException('机构不存在');
+            throw new InstitutionNotFoundException($institutionId);
         }
 
         $allChanges = $this->changeRecordRepository->findByInstitution($institution);
@@ -363,6 +367,6 @@ class ChangeRecordService
         }
 
         if (!empty($errors)) {
-            throw new \InvalidArgumentException(implode('；', $errors));
+            throw new InvalidChangeDataException(implode('；', $errors));
         }
     }}

@@ -14,7 +14,7 @@ use Tourze\TrainInstitutionBundle\Service\FacilityService;
 
 /**
  * 设施检查安排命令
- * 
+ *
  * 自动安排需要检查的培训设施，确保设施安全和合规
  * 建议每周执行一次（cron: 0 10 * * 1）
  */

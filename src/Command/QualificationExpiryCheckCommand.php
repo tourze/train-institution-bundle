@@ -14,7 +14,7 @@ use Tourze\TrainInstitutionBundle\Service\QualificationService;
 
 /**
  * 资质到期检查命令
- * 
+ *
  * 检查即将到期的培训机构资质证书，生成提醒报告
  * 建议每日执行一次（cron: 0 9 * * *）
  */

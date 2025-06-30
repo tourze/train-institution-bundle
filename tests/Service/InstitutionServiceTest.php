@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 namespace Tourze\TrainInstitutionBundle\Tests\Service;
+use Tourze\TrainInstitutionBundle\Exception\DuplicateInstitutionCodeException;
+use Tourze\TrainInstitutionBundle\Exception\DuplicateRegistrationNumberException;
+use Tourze\TrainInstitutionBundle\Exception\InstitutionNotFoundException;
+use Tourze\TrainInstitutionBundle\Exception\InvalidInstitutionDataException;
 
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -107,7 +111,7 @@ class InstitutionServiceTest extends TestCase
             ->with('TEST001')
             ->willReturn(true);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(DuplicateInstitutionCodeException::class);
         $this->expectExceptionMessage('机构代码已存在');
 
         $this->institutionService->createInstitution($institutionData);
@@ -144,7 +148,7 @@ class InstitutionServiceTest extends TestCase
             'contactEmail' => 'invalid-email', // 无效邮箱
         ];
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidInstitutionDataException::class);
         $this->expectExceptionMessageMatches('/机构名称不能为空/');
         
         $this->institutionService->validateInstitutionData($invalidData);

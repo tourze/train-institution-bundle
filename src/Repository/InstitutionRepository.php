@@ -10,7 +10,7 @@ use Tourze\TrainInstitutionBundle\Entity\Institution;
 
 /**
  * 培训机构Repository
- * 
+ *
  * 提供培训机构的数据访问方法，包括查询、统计等功能
  */
 class InstitutionRepository extends ServiceEntityRepository

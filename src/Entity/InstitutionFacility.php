@@ -11,7 +11,7 @@ use Tourze\TrainInstitutionBundle\Repository\InstitutionFacilityRepository;
 
 /**
  * 机构设施实体
- * 
+ *
  * 管理培训机构的场地设施信息，包括教室、实训场地、办公区域等
  * 符合AQ8011-2023对培训场地和设施的要求
  */

@@ -11,7 +11,7 @@ use Tourze\TrainInstitutionBundle\Entity\InstitutionQualification;
 
 /**
  * 机构资质Repository
- * 
+ *
  * 提供机构资质的数据访问方法，包括到期检查、有效性验证等功能
  */
 class InstitutionQualificationRepository extends ServiceEntityRepository

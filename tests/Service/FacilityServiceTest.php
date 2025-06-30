@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Tourze\TrainInstitutionBundle\Tests\Service;
 
+use Tourze\TrainInstitutionBundle\Exception\FacilityNotFoundException;
+use Tourze\TrainInstitutionBundle\Exception\InstitutionNotFoundException;
+use Tourze\TrainInstitutionBundle\Exception\InvalidFacilityDataException;
+
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -95,7 +99,7 @@ class FacilityServiceTest extends TestCase
             ->with('non-existent-id')
             ->willReturn(null);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InstitutionNotFoundException::class);
         $this->expectExceptionMessage('机构不存在');
 
         $this->facilityService->addFacility('non-existent-id', $facilityData);
@@ -142,7 +146,7 @@ class FacilityServiceTest extends TestCase
             ->with($facilityId)
             ->willReturn(null);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(FacilityNotFoundException::class);
         $this->expectExceptionMessage('设施不存在');
 
         $this->facilityService->scheduleFacilityInspection($facilityId, $inspectionDate);

@@ -7,11 +7,15 @@ namespace Tourze\TrainInstitutionBundle\Service;
 use Doctrine\ORM\EntityManagerInterface;
 use Tourze\TrainInstitutionBundle\Entity\Institution;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionChangeRecord;
+use Tourze\TrainInstitutionBundle\Exception\DuplicateInstitutionCodeException;
+use Tourze\TrainInstitutionBundle\Exception\DuplicateRegistrationNumberException;
+use Tourze\TrainInstitutionBundle\Exception\InstitutionNotFoundException;
+use Tourze\TrainInstitutionBundle\Exception\InvalidInstitutionDataException;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
 
 /**
  * 培训机构服务
- * 
+ *
  * 提供培训机构的核心业务逻辑，包括创建、更新、状态管理等功能
  */
 class InstitutionService
@@ -32,12 +36,12 @@ class InstitutionService
 
         // 检查机构代码唯一性
         if ($this->institutionRepository->isInstitutionCodeExists($institutionData['institutionCode'])) {
-            throw new \InvalidArgumentException('机构代码已存在');
+            throw new DuplicateInstitutionCodeException($institutionData['institutionCode']);
         }
 
         // 检查注册号唯一性
         if ($this->institutionRepository->isRegistrationNumberExists($institutionData['registrationNumber'])) {
-            throw new \InvalidArgumentException('注册号已存在');
+            throw new DuplicateRegistrationNumberException($institutionData['registrationNumber']);
         }
 
         $institution = Institution::create(
@@ -69,7 +73,7 @@ class InstitutionService
     {
         $institution = $this->getInstitutionById($institutionId);
         if ($institution === null) {
-            throw new \InvalidArgumentException('机构不存在');
+            throw new InstitutionNotFoundException($institutionId);
         }
 
         // 记录变更前的数据
@@ -91,7 +95,7 @@ class InstitutionService
         }
         if (isset($institutionData['institutionCode'])) {
             if ($this->institutionRepository->isInstitutionCodeExists($institutionData['institutionCode'], $institutionId)) {
-                throw new \InvalidArgumentException('机构代码已存在');
+                throw new DuplicateInstitutionCodeException($institutionData['institutionCode']);
             }
             $institution->setInstitutionCode($institutionData['institutionCode']);
         }
@@ -204,7 +208,7 @@ class InstitutionService
         }
 
         if (!empty($errors)) {
-            throw new \InvalidArgumentException(implode('；', $errors));
+            throw new InvalidInstitutionDataException(implode('；', $errors));
         }
 
         return $errors;
@@ -217,7 +221,7 @@ class InstitutionService
     {
         $institution = $this->getInstitutionById($institutionId);
         if ($institution === null) {
-            throw new \InvalidArgumentException('机构不存在');
+            throw new InstitutionNotFoundException($institutionId);
         }
 
         $oldStatus = $institution->getInstitutionStatus();
@@ -247,7 +251,7 @@ class InstitutionService
     {
         $institution = $this->getInstitutionById($institutionId);
         if ($institution === null) {
-            throw new \InvalidArgumentException('机构不存在');
+            throw new InstitutionNotFoundException($institutionId);
         }
 
         $issues = [];

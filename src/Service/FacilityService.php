@@ -6,12 +6,15 @@ namespace Tourze\TrainInstitutionBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionFacility;
+use Tourze\TrainInstitutionBundle\Exception\FacilityNotFoundException;
+use Tourze\TrainInstitutionBundle\Exception\InstitutionNotFoundException;
+use Tourze\TrainInstitutionBundle\Exception\InvalidFacilityDataException;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionFacilityRepository;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
 
 /**
  * 机构设施服务
- * 
+ *
  * 提供培训机构设施的核心业务逻辑，包括设施添加、更新、检查调度、合规验证等功能
  */
 class FacilityService
@@ -34,7 +37,7 @@ class FacilityService
         // 获取机构
         $institution = $this->institutionRepository->find($institutionId);
         if ($institution === null) {
-            throw new \InvalidArgumentException('机构不存在');
+            throw new InstitutionNotFoundException($institutionId);
         }
 
         $facility = InstitutionFacility::create(
@@ -70,7 +73,7 @@ class FacilityService
     {
         $facility = $this->facilityRepository->find($facilityId);
         if ($facility === null) {
-            throw new \InvalidArgumentException('设施不存在');
+            throw new FacilityNotFoundException($facilityId);
         }
 
         // 更新字段
@@ -117,7 +120,7 @@ class FacilityService
     {
         $facility = $this->facilityRepository->find($facilityId);
         if ($facility === null) {
-            throw new \InvalidArgumentException('设施不存在');
+            throw new FacilityNotFoundException($facilityId);
         }
 
         $facility->scheduleInspection($inspectionDate);
@@ -131,7 +134,7 @@ class FacilityService
     {
         $facility = $this->facilityRepository->find($facilityId);
         if ($facility === null) {
-            throw new \InvalidArgumentException('设施不存在');
+            throw new FacilityNotFoundException($facilityId);
         }
 
         $facility->completeInspection($inspectionDate, $nextInspectionDate);
@@ -147,7 +150,7 @@ class FacilityService
     {
         $facility = $this->facilityRepository->find($facilityId);
         if ($facility === null) {
-            throw new \InvalidArgumentException('设施不存在');
+            throw new FacilityNotFoundException($facilityId);
         }
 
         // 这里应该根据实际的使用记录来计算利用率
@@ -172,7 +175,7 @@ class FacilityService
     {
         $institution = $this->institutionRepository->find($institutionId);
         if ($institution === null) {
-            throw new \InvalidArgumentException('机构不存在');
+            throw new InstitutionNotFoundException($institutionId);
         }
 
         $facilities = $this->facilityRepository->findByInstitution($institution);
@@ -224,7 +227,7 @@ class FacilityService
     {
         $institution = $this->institutionRepository->find($institutionId);
         if ($institution === null) {
-            throw new \InvalidArgumentException('机构不存在');
+            throw new InstitutionNotFoundException($institutionId);
         }
 
         $facilities = $this->facilityRepository->findByInstitution($institution);
@@ -326,7 +329,7 @@ class FacilityService
     {
         $facility = $this->facilityRepository->find($facilityId);
         if ($facility === null) {
-            throw new \InvalidArgumentException('设施不存在');
+            throw new FacilityNotFoundException($facilityId);
         }
 
         $facility->addEquipment($equipment);
@@ -342,7 +345,7 @@ class FacilityService
     {
         $facility = $this->facilityRepository->find($facilityId);
         if ($facility === null) {
-            throw new \InvalidArgumentException('设施不存在');
+            throw new FacilityNotFoundException($facilityId);
         }
 
         $facility->addSafetyEquipment($safetyEquipment);
@@ -389,6 +392,6 @@ class FacilityService
         }
 
         if (!empty($errors)) {
-            throw new \InvalidArgumentException(implode('；', $errors));
+            throw new InvalidFacilityDataException(implode('；', $errors));
         }
     }}

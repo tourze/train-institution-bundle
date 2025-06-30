@@ -13,7 +13,7 @@ use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
 
 /**
  * 培训机构实体
- * 
+ *
  * 符合AQ8011-2023培训机构基本条件要求
  * 管理培训机构的基本信息、联系方式、组织架构等
  */

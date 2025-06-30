@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tourze\TrainInstitutionBundle\Tests\Repository;
+namespace Tourze\TrainInstitutionBundle\Tests\Integration\Repository;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;

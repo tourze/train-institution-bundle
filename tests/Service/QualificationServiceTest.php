@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 namespace Tourze\TrainInstitutionBundle\Tests\Service;
+use Tourze\TrainInstitutionBundle\Exception\DuplicateCertificateNumberException;
+use Tourze\TrainInstitutionBundle\Exception\InstitutionNotFoundException;
+use Tourze\TrainInstitutionBundle\Exception\InvalidQualificationDataException;
+use Tourze\TrainInstitutionBundle\Exception\QualificationExpiredException;
+use Tourze\TrainInstitutionBundle\Exception\QualificationNotFoundException;
 
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -114,7 +119,7 @@ class QualificationServiceTest extends TestCase
             ->with('CERT001')
             ->willReturn(true);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(DuplicateCertificateNumberException::class);
         $this->expectExceptionMessage('证书编号已存在');
 
         $this->qualificationService->addQualification('institution-id', $qualificationData);
@@ -225,7 +230,7 @@ class QualificationServiceTest extends TestCase
             ->with($qualificationId)
             ->willReturn(null);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(QualificationNotFoundException::class);
         $this->expectExceptionMessage('资质不存在');
 
         $this->qualificationService->renewQualification($qualificationId, $renewalData);

@@ -17,7 +17,7 @@ use Tourze\TrainInstitutionBundle\Service\QualificationService;
 
 /**
  * 机构报告生成命令
- * 
+ *
  * 生成培训机构的综合报告，包括机构状态、资质情况、设施状况等
  * 建议每月执行一次（cron: 0 6 1 * *）
  */

@@ -6,12 +6,17 @@ namespace Tourze\TrainInstitutionBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionQualification;
+use Tourze\TrainInstitutionBundle\Exception\DuplicateCertificateNumberException;
+use Tourze\TrainInstitutionBundle\Exception\InstitutionNotFoundException;
+use Tourze\TrainInstitutionBundle\Exception\InvalidQualificationDataException;
+use Tourze\TrainInstitutionBundle\Exception\QualificationExpiredException;
+use Tourze\TrainInstitutionBundle\Exception\QualificationNotFoundException;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionQualificationRepository;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
 
 /**
  * 机构资质服务
- * 
+ *
  * 提供培训机构资质的核心业务逻辑，包括资质添加、更新、到期检查、续期等功能
  */
 class QualificationService
@@ -34,17 +39,17 @@ class QualificationService
         // 获取机构
         $institution = $this->institutionRepository->find($institutionId);
         if ($institution === null) {
-            throw new \InvalidArgumentException('机构不存在');
+            throw new InstitutionNotFoundException($institutionId);
         }
 
         // 检查证书编号唯一性
         if ($this->qualificationRepository->isCertificateNumberExists($qualificationData['certificateNumber'])) {
-            throw new \InvalidArgumentException('证书编号已存在');
+            throw new DuplicateCertificateNumberException($qualificationData['certificateNumber']);
         }
 
         // 验证有效期
         if ($qualificationData['validFrom'] >= $qualificationData['validTo']) {
-            throw new \InvalidArgumentException('有效期开始日期必须早于结束日期');
+            throw new InvalidQualificationDataException('有效期开始日期必须早于结束日期');
         }
 
         $qualification = InstitutionQualification::create(
@@ -74,7 +79,7 @@ class QualificationService
     {
         $qualification = $this->qualificationRepository->find($qualificationId);
         if ($qualification === null) {
-            throw new \InvalidArgumentException('资质不存在');
+            throw new QualificationNotFoundException($qualificationId);
         }
 
         // 更新字段
@@ -86,7 +91,7 @@ class QualificationService
         }
         if (isset($qualificationData['certificateNumber'])) {
             if ($this->qualificationRepository->isCertificateNumberExists($qualificationData['certificateNumber'], $qualificationId)) {
-                throw new \InvalidArgumentException('证书编号已存在');
+                throw new DuplicateCertificateNumberException($qualificationData['certificateNumber']);
             }
             $qualification->setCertificateNumber($qualificationData['certificateNumber']);
         }
@@ -114,7 +119,7 @@ class QualificationService
 
         // 验证有效期
         if ($qualification->getValidFrom() >= $qualification->getValidTo()) {
-            throw new \InvalidArgumentException('有效期开始日期必须早于结束日期');
+            throw new InvalidQualificationDataException('有效期开始日期必须早于结束日期');
         }
 
         $this->entityManager->flush();
@@ -129,7 +134,7 @@ class QualificationService
     {
         $institution = $this->institutionRepository->find($institutionId);
         if ($institution === null) {
-            throw new \InvalidArgumentException('机构不存在');
+            throw new InstitutionNotFoundException($institutionId);
         }
 
         $qualifications = $this->qualificationRepository->findByInstitution($institution);
@@ -165,23 +170,23 @@ class QualificationService
     {
         $qualification = $this->qualificationRepository->find($qualificationId);
         if ($qualification === null) {
-            throw new \InvalidArgumentException('资质不存在');
+            throw new QualificationNotFoundException($qualificationId);
         }
 
         // 验证续期数据
         if ((bool) empty($renewalData['newValidTo'])) {
-            throw new \InvalidArgumentException('新的有效期结束日期不能为空');
+            throw new InvalidQualificationDataException('新的有效期结束日期不能为空');
         }
 
         $newValidTo = $renewalData['newValidTo'];
         if ($newValidTo <= new \DateTimeImmutable()) {
-            throw new \InvalidArgumentException('新的有效期结束日期必须是未来日期');
+            throw new InvalidQualificationDataException('新的有效期结束日期必须是未来日期');
         }
 
         // 检查新证书编号唯一性（如果提供）
         $newCertificateNumber = $renewalData['newCertificateNumber'] ?? null;
         if ($newCertificateNumber && $this->qualificationRepository->isCertificateNumberExists($newCertificateNumber, $qualificationId)) {
-            throw new \InvalidArgumentException('新证书编号已存在');
+            throw new DuplicateCertificateNumberException($newCertificateNumber);
         }
 
         $qualification->renew($newValidTo, $newCertificateNumber);
@@ -220,7 +225,7 @@ class QualificationService
     {
         $qualification = $this->qualificationRepository->find($qualificationId);
         if ($qualification === null) {
-            throw new \InvalidArgumentException('资质不存在');
+            throw new QualificationNotFoundException($qualificationId);
         }
 
         // 检查资质是否有效
@@ -269,7 +274,7 @@ class QualificationService
     {
         $qualification = $this->qualificationRepository->find($qualificationId);
         if ($qualification === null) {
-            throw new \InvalidArgumentException('资质不存在');
+            throw new QualificationNotFoundException($qualificationId);
         }
 
         $qualification->setQualificationStatus('已撤销');
@@ -285,7 +290,7 @@ class QualificationService
     {
         $qualification = $this->qualificationRepository->find($qualificationId);
         if ($qualification === null) {
-            throw new \InvalidArgumentException('资质不存在');
+            throw new QualificationNotFoundException($qualificationId);
         }
 
         $qualification->setQualificationStatus('暂停');
@@ -301,12 +306,12 @@ class QualificationService
     {
         $qualification = $this->qualificationRepository->find($qualificationId);
         if ($qualification === null) {
-            throw new \InvalidArgumentException('资质不存在');
+            throw new QualificationNotFoundException($qualificationId);
         }
 
         // 检查是否在有效期内
         if ($qualification->getValidTo() <= new \DateTimeImmutable()) {
-            throw new \InvalidArgumentException('资质已过期，无法恢复');
+            throw new QualificationExpiredException();
         }
 
         $qualification->setQualificationStatus('有效');
@@ -348,6 +353,6 @@ class QualificationService
         }
 
         if (!empty($errors)) {
-            throw new \InvalidArgumentException(implode('；', $errors));
+            throw new InvalidQualificationDataException(implode('；', $errors));
         }
     }}

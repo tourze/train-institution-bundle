@@ -14,7 +14,7 @@ use Tourze\TrainInstitutionBundle\Service\InstitutionService;
 
 /**
  * 机构状态检查命令
- * 
+ *
  * 检查培训机构的状态和合规性，确保机构符合AQ8011-2023标准
  * 建议每日执行一次（cron: 0 8 * * *）
  */

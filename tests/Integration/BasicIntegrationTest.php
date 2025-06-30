@@ -12,7 +12,7 @@ use Tourze\TrainInstitutionBundle\Entity\InstitutionQualification;
 
 /**
  * 基础集成测试
- * 
+ *
  * 测试实体之间的关系和基本功能
  */
 class BasicIntegrationTest extends TestCase

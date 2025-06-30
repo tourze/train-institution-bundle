@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 namespace Tourze\TrainInstitutionBundle\Tests\Service;
+use Tourze\TrainInstitutionBundle\Exception\ChangeRecordAlreadyProcessedException;
+use Tourze\TrainInstitutionBundle\Exception\ChangeRecordNotFoundException;
+use Tourze\TrainInstitutionBundle\Exception\InstitutionNotFoundException;
+use Tourze\TrainInstitutionBundle\Exception\InvalidChangeDataException;
 
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -123,7 +127,7 @@ class ChangeRecordServiceTest extends TestCase
             ->with($institutionId)
             ->willReturn(null);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InstitutionNotFoundException::class);
         $this->expectExceptionMessage('机构不存在');
 
         $this->service->recordChange($institutionId, $changeData);
@@ -149,7 +153,7 @@ class ChangeRecordServiceTest extends TestCase
             ->expects($this->never())
             ->method('find');
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidChangeDataException::class);
         $this->expectExceptionMessage('变更类型不能为空');
 
         $this->service->recordChange($institutionId, $invalidChangeData);
@@ -205,7 +209,7 @@ class ChangeRecordServiceTest extends TestCase
             ->with($recordId)
             ->willReturn(null);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(ChangeRecordNotFoundException::class);
         $this->expectExceptionMessage('变更记录不存在');
 
         $this->service->approveChange($recordId, $approver);
@@ -236,7 +240,7 @@ class ChangeRecordServiceTest extends TestCase
             ->with($recordId)
             ->willReturn($changeRecord);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(ChangeRecordAlreadyProcessedException::class);
         $this->expectExceptionMessage('该变更记录已处理，无法重复审批');
 
         $this->service->approveChange($recordId, $approver);
@@ -293,7 +297,7 @@ class ChangeRecordServiceTest extends TestCase
             ->with($recordId)
             ->willReturn(null);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(ChangeRecordNotFoundException::class);
         $this->expectExceptionMessage('变更记录不存在');
 
         $this->service->rejectChange($recordId, $approver);
@@ -342,7 +346,7 @@ class ChangeRecordServiceTest extends TestCase
             ->with($institutionId)
             ->willReturn(null);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InstitutionNotFoundException::class);
         $this->expectExceptionMessage('机构不存在');
 
         $this->service->getChangeHistory($institutionId);
@@ -579,7 +583,7 @@ class ChangeRecordServiceTest extends TestCase
             ->with($recordId)
             ->willReturn(null);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(ChangeRecordNotFoundException::class);
         $this->expectExceptionMessage('变更记录不存在');
 
         $this->service->getChangeDetail($recordId);
@@ -696,7 +700,7 @@ class ChangeRecordServiceTest extends TestCase
             ->expects($this->never())
             ->method('find');
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidChangeDataException::class);
         $this->expectExceptionMessage('变更详情必须是数组格式');
 
         $this->service->recordChange($institutionId, $invalidChangeData);
@@ -722,7 +726,7 @@ class ChangeRecordServiceTest extends TestCase
             ->expects($this->never())
             ->method('find');
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidChangeDataException::class);
         $this->expectExceptionMessage('变更前数据必须是数组格式');
 
         $this->service->recordChange($institutionId, $invalidChangeData);
@@ -748,7 +752,7 @@ class ChangeRecordServiceTest extends TestCase
             ->expects($this->never())
             ->method('find');
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidChangeDataException::class);
         $this->expectExceptionMessage('变更后数据必须是数组格式');
 
         $this->service->recordChange($institutionId, $invalidChangeData);
