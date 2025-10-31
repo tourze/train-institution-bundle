@@ -4,241 +4,525 @@ declare(strict_types=1);
 
 namespace Tourze\TrainInstitutionBundle\Tests\Service;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractIntegrationTestCase;
+use Tourze\TrainInstitutionBundle\Entity\InstitutionFacility;
 use Tourze\TrainInstitutionBundle\Exception\FacilityNotFoundException;
 use Tourze\TrainInstitutionBundle\Exception\InstitutionNotFoundException;
 use Tourze\TrainInstitutionBundle\Exception\InvalidFacilityDataException;
-
-use Doctrine\ORM\EntityManagerInterface;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
-use Tourze\TrainInstitutionBundle\Entity\Institution;
-use Tourze\TrainInstitutionBundle\Entity\InstitutionFacility;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionFacilityRepository;
-use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
 use Tourze\TrainInstitutionBundle\Service\FacilityService;
+use Tourze\TrainInstitutionBundle\Service\InstitutionService;
 
 /**
- * FacilityService 单元测试
+ * FacilityService 集成测试
+ *
+ * @internal
  */
-class FacilityServiceTest extends TestCase
+#[CoversClass(FacilityService::class)]
+#[RunTestsInSeparateProcesses]
+final class FacilityServiceTest extends AbstractIntegrationTestCase
 {
-    private MockObject&EntityManagerInterface $entityManager;
-    private MockObject&InstitutionRepository $institutionRepository;
-    private MockObject&InstitutionFacilityRepository $facilityRepository;
-    private FacilityService $facilityService;
+    private FacilityService $service;
 
-    protected function setUp(): void
+    public function testServiceExists(): void
     {
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->institutionRepository = $this->createMock(InstitutionRepository::class);
-        $this->facilityRepository = $this->createMock(InstitutionFacilityRepository::class);
+        self::assertSame(FacilityService::class, $this->service::class);
+    }
 
-        $this->facilityService = new FacilityService(
-            $this->entityManager,
-            $this->institutionRepository,
-            $this->facilityRepository
+    public function testAddFacility(): void
+    {
+        // 创建一个真实的机构用于测试
+        $institutionData = [
+            'institutionName' => '测试机构_设施测试',
+            'institutionCode' => 'TEST_FAC_' . uniqid(),
+            'registrationNumber' => 'REG_FAC_' . uniqid(),
+            'institutionType' => '企业',
+            'legalPerson' => '张三',
+            'contactPerson' => '李四',
+            'contactPhone' => '13800138000',
+            'contactEmail' => 'test@example.com',
+            'address' => '测试地址',
+            'businessScope' => '职业技能培训',
+            'establishDate' => new \DateTimeImmutable('2020-01-01'),
+        ];
+
+        $institutionService = self::getService(InstitutionService::class);
+        $institution = $institutionService->createInstitution($institutionData);
+
+        $facilityData = $this->getValidFacilityData();
+
+        $result = $this->service->addFacility($institution->getId(), $facilityData);
+
+        self::assertSame($facilityData['facilityType'], $result->getFacilityType());
+        self::assertSame($facilityData['facilityName'], $result->getFacilityName());
+    }
+
+    public function testAddFacilityWithInvalidInstitution(): void
+    {
+        $institutionId = 'invalid-institution-id';
+        $facilityData = $this->getValidFacilityData();
+
+        $this->expectException(InstitutionNotFoundException::class);
+
+        $this->service->addFacility($institutionId, $facilityData);
+    }
+
+    /**
+     * @param array<string, mixed> $facilityData
+     */
+    #[DataProvider('invalidFacilityDataProvider')]
+    public function testAddFacilityWithInvalidData(array $facilityData): void
+    {
+        $this->expectException(InvalidFacilityDataException::class);
+
+        $this->service->addFacility('dummy-id', $facilityData);
+    }
+
+    /**
+     * @return array<string, list<array<string, mixed>>>
+     */
+    public static function invalidFacilityDataProvider(): array
+    {
+        return [
+            'missing facilityType' => [
+                [
+                    'facilityName' => '测试教室1',
+                    'facilityLocation' => '1楼101室',
+                    'facilityArea' => 100.0,
+                    'capacity' => 50,
+                ],
+            ],
+            'invalid facilityType' => [
+                [
+                    'facilityType' => 123, // 应该是字符串
+                    'facilityName' => '测试教室1',
+                    'facilityLocation' => '1楼101室',
+                    'facilityArea' => 100.0,
+                    'capacity' => 50,
+                ],
+            ],
+            'negative area' => [
+                [
+                    'facilityType' => '教室',
+                    'facilityName' => '测试教室1',
+                    'facilityLocation' => '1楼101室',
+                    'facilityArea' => -10.0,
+                    'capacity' => 50,
+                ],
+            ],
+            'zero capacity' => [
+                [
+                    'facilityType' => '教室',
+                    'facilityName' => '测试教室1',
+                    'facilityLocation' => '1楼101室',
+                    'facilityArea' => 100.0,
+                    'capacity' => 0,
+                ],
+            ],
+        ];
+    }
+
+    protected function onSetUp(): void
+    {
+        $this->service = self::getService(FacilityService::class);
+    }
+
+    public function testUpdateFacility(): void
+    {
+        // 创建测试机构和设施
+        $institutionService = self::getService(InstitutionService::class);
+        $institution = $institutionService->createInstitution([
+            'institutionName' => '测试机构_更新设施',
+            'institutionCode' => 'TEST_UPD_FAC_' . uniqid(),
+            'registrationNumber' => 'REG_UPD_FAC_' . uniqid(),
+            'institutionType' => '企业',
+            'legalPerson' => '张三',
+            'contactPerson' => '李四',
+            'contactPhone' => '13800138000',
+            'contactEmail' => 'test@example.com',
+            'address' => '测试地址',
+            'businessScope' => '职业技能培训',
+            'establishDate' => new \DateTimeImmutable('2020-01-01'),
+        ]);
+
+        $facilityData = $this->getValidFacilityData();
+        $facility = $this->service->addFacility($institution->getId(), $facilityData);
+
+        // 更新设施信息
+        $updateData = [
+            'facilityName' => '更新后的教室',
+            'facilityLocation' => '2楼201室',
+            'facilityArea' => 150.0,
+            'capacity' => 60,
+            'facilityStatus' => '维修中',
+        ];
+
+        $updatedFacility = $this->service->updateFacility($facility->getId(), $updateData);
+
+        self::assertSame('更新后的教室', $updatedFacility->getFacilityName());
+        self::assertSame('2楼201室', $updatedFacility->getFacilityLocation());
+        self::assertSame(150.0, $updatedFacility->getFacilityArea());
+        self::assertSame(60, $updatedFacility->getCapacity());
+        self::assertSame('维修中', $updatedFacility->getFacilityStatus());
+    }
+
+    public function testUpdateFacilityWithInvalidId(): void
+    {
+        $this->expectException(FacilityNotFoundException::class);
+
+        $this->service->updateFacility('invalid-facility-id', ['facilityName' => '新名称']);
+    }
+
+    public function testScheduleFacilityInspection(): void
+    {
+        // 创建测试机构和设施
+        $institutionService = self::getService(InstitutionService::class);
+        $institution = $institutionService->createInstitution([
+            'institutionName' => '测试机构_调度检查',
+            'institutionCode' => 'TEST_SCH_' . uniqid(),
+            'registrationNumber' => 'REG_SCH_' . uniqid(),
+            'institutionType' => '企业',
+            'legalPerson' => '张三',
+            'contactPerson' => '李四',
+            'contactPhone' => '13800138000',
+            'contactEmail' => 'test@example.com',
+            'address' => '测试地址',
+            'businessScope' => '职业技能培训',
+            'establishDate' => new \DateTimeImmutable('2020-01-01'),
+        ]);
+
+        $facilityData = $this->getValidFacilityData();
+        $facility = $this->service->addFacility($institution->getId(), $facilityData);
+
+        // 安排检查
+        $inspectionDate = new \DateTimeImmutable('+7 days');
+        $this->service->scheduleFacilityInspection($facility->getId(), $inspectionDate);
+
+        // 验证检查日期已设置
+        $repository = self::getService(InstitutionFacilityRepository::class);
+        $updatedFacility = $repository->find($facility->getId());
+        self::assertNotNull($updatedFacility);
+        self::assertInstanceOf(InstitutionFacility::class, $updatedFacility);
+        self::assertNotNull($updatedFacility->getNextInspectionDate());
+        self::assertSame($inspectionDate->format('Y-m-d'), $updatedFacility->getNextInspectionDate()->format('Y-m-d'));
+    }
+
+    public function testScheduleFacilityInspectionWithInvalidId(): void
+    {
+        $this->expectException(FacilityNotFoundException::class);
+
+        $this->service->scheduleFacilityInspection('invalid-id', new \DateTimeImmutable('+7 days'));
+    }
+
+    public function testCompleteFacilityInspection(): void
+    {
+        // 创建测试机构和设施
+        $institutionService = self::getService(InstitutionService::class);
+        $institution = $institutionService->createInstitution([
+            'institutionName' => '测试机构_完成检查',
+            'institutionCode' => 'TEST_COMP_' . uniqid(),
+            'registrationNumber' => 'REG_COMP_' . uniqid(),
+            'institutionType' => '企业',
+            'legalPerson' => '张三',
+            'contactPerson' => '李四',
+            'contactPhone' => '13800138000',
+            'contactEmail' => 'test@example.com',
+            'address' => '测试地址',
+            'businessScope' => '职业技能培训',
+            'establishDate' => new \DateTimeImmutable('2020-01-01'),
+        ]);
+
+        $facilityData = $this->getValidFacilityData();
+        $facility = $this->service->addFacility($institution->getId(), $facilityData);
+
+        // 完成检查
+        $inspectionDate = new \DateTimeImmutable('today');
+        $nextInspectionDate = new \DateTimeImmutable('+30 days');
+        $completedFacility = $this->service->completeFacilityInspection(
+            $facility->getId(),
+            $inspectionDate,
+            $nextInspectionDate
+        );
+
+        self::assertNotNull($completedFacility->getLastInspectionDate());
+        self::assertSame($inspectionDate->format('Y-m-d'), $completedFacility->getLastInspectionDate()->format('Y-m-d'));
+        self::assertNotNull($completedFacility->getNextInspectionDate());
+        self::assertSame($nextInspectionDate->format('Y-m-d'), $completedFacility->getNextInspectionDate()->format('Y-m-d'));
+    }
+
+    public function testCompleteFacilityInspectionWithInvalidId(): void
+    {
+        $this->expectException(FacilityNotFoundException::class);
+
+        $this->service->completeFacilityInspection(
+            'invalid-id',
+            new \DateTimeImmutable('today'),
+            new \DateTimeImmutable('+30 days')
         );
     }
 
-    /**
-     * 测试添加设施
-     */
-    public function testAddFacility(): void
-    {
-        $institution = $this->createMock(Institution::class);
-        $institution->method('getId')->willReturn('institution-id');
-
-        $facilityData = [
-            'facilityType' => '教室',
-            'facilityName' => '多媒体教室1',
-            'facilityLocation' => '一楼东侧',
-            'facilityArea' => 120.5,
-            'capacity' => 50,
-            'equipmentList' => ['投影仪', '音响设备'],
-            'safetyEquipment' => ['灭火器', '应急照明'],
-        ];
-
-        // 模拟获取机构
-        $this->institutionRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with('institution-id')
-            ->willReturn($institution);
-
-        // 模拟保存操作
-        $this->entityManager
-            ->expects($this->once())
-            ->method('persist');
-
-        $this->entityManager
-            ->expects($this->once())
-            ->method('flush');
-
-        $facility = $this->facilityService->addFacility('institution-id', $facilityData);
-
-        $this->assertInstanceOf(InstitutionFacility::class, $facility);
-    }
-
-    /**
-     * 测试机构不存在的情况
-     */
-    public function testAddFacilityWithNonExistentInstitution(): void
-    {
-        $facilityData = [
-            'facilityType' => '教室',
-            'facilityName' => '多媒体教室1',
-            'facilityLocation' => '一楼东侧',
-            'facilityArea' => 120.5,
-            'capacity' => 50,
-        ];
-
-        // 模拟机构不存在
-        $this->institutionRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with('non-existent-id')
-            ->willReturn(null);
-
-        $this->expectException(InstitutionNotFoundException::class);
-        $this->expectExceptionMessage('机构不存在');
-
-        $this->facilityService->addFacility('non-existent-id', $facilityData);
-    }
-
-    /**
-     * 测试安排设施检查
-     */
-    public function testScheduleFacilityInspection(): void
-    {
-        $facilityId = 'facility-id';
-        $inspectionDate = new \DateTimeImmutable('+30 days');
-        $facility = $this->createMock(InstitutionFacility::class);
-
-        $this->facilityRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($facilityId)
-            ->willReturn($facility);
-
-        $facility
-            ->expects($this->once())
-            ->method('scheduleInspection')
-            ->with($inspectionDate);
-
-        $this->entityManager
-            ->expects($this->once())
-            ->method('flush');
-
-        $this->facilityService->scheduleFacilityInspection($facilityId, $inspectionDate);
-    }
-
-    /**
-     * 测试设施不存在的情况
-     */
-    public function testScheduleInspectionForNonExistentFacility(): void
-    {
-        $facilityId = 'non-existent-id';
-        $inspectionDate = new \DateTimeImmutable('+30 days');
-
-        $this->facilityRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($facilityId)
-            ->willReturn(null);
-
-        $this->expectException(FacilityNotFoundException::class);
-        $this->expectExceptionMessage('设施不存在');
-
-        $this->facilityService->scheduleFacilityInspection($facilityId, $inspectionDate);
-    }
-
-    /**
-     * 测试验证设施要求
-     */
     public function testValidateFacilityRequirements(): void
     {
-        $institutionId = 'institution-id';
-        $institution = $this->createMock(Institution::class);
-        $institution->method('getId')->willReturn($institutionId);
+        // 创建测试机构和设施
+        $institutionService = self::getService(InstitutionService::class);
+        $institution = $institutionService->createInstitution([
+            'institutionName' => '测试机构_验证要求',
+            'institutionCode' => 'TEST_VAL_' . uniqid(),
+            'registrationNumber' => 'REG_VAL_' . uniqid(),
+            'institutionType' => '企业',
+            'legalPerson' => '张三',
+            'contactPerson' => '李四',
+            'contactPhone' => '13800138000',
+            'contactEmail' => 'test@example.com',
+            'address' => '测试地址',
+            'businessScope' => '职业技能培训',
+            'establishDate' => new \DateTimeImmutable('2020-01-01'),
+        ]);
 
-        $facility1 = $this->createMock(InstitutionFacility::class);
-        $facility1->method('checkAQ8011Compliance')->willReturn([]);
-        $facility1->method('getFacilityType')->willReturn('教室');
+        // 添加教室设施
+        $classroomData = [
+            'facilityType' => '教室',
+            'facilityName' => '多媒体教室',
+            'facilityLocation' => '1楼101室',
+            'facilityArea' => 120.0,
+            'capacity' => 50,
+            'equipmentList' => ['投影仪'],
+            'safetyEquipment' => ['灭火器'],
+            'facilityStatus' => '正常使用',
+        ];
+        $this->service->addFacility($institution->getId(), $classroomData);
 
-        $facility2 = $this->createMock(InstitutionFacility::class);
-        $facility2->method('checkAQ8011Compliance')->willReturn(['面积不足']);
-        $facility2->method('getFacilityType')->willReturn('实训场地');
+        // 添加实训场地
+        $trainingData = [
+            'facilityType' => '实训场地',
+            'facilityName' => '安全实训场',
+            'facilityLocation' => '2楼201室',
+            'facilityArea' => 150.0,
+            'capacity' => 30,
+            'equipmentList' => ['实训设备'],
+            'safetyEquipment' => ['灭火器', '急救箱'],
+            'facilityStatus' => '正常使用',
+        ];
+        $this->service->addFacility($institution->getId(), $trainingData);
 
-        $facilities = [$facility1, $facility2];
+        // 验证设施要求
+        $validationResult = $this->service->validateFacilityRequirements($institution->getId());
 
-        $this->institutionRepository
-            ->expects($this->once())
-            ->method('find')
-            ->with($institutionId)
-            ->willReturn($institution);
+        self::assertArrayHasKey('facilities', $validationResult);
+        self::assertArrayHasKey('overall_compliant', $validationResult);
+        self::assertArrayHasKey('total_area', $validationResult);
+        self::assertArrayHasKey('facility_counts', $validationResult);
+    }
 
-        $this->facilityRepository
-            ->expects($this->once())
-            ->method('findByInstitution')
-            ->with($institution)
-            ->willReturn($facilities);
+    public function testValidateFacilityRequirementsWithInvalidInstitution(): void
+    {
+        $this->expectException(InstitutionNotFoundException::class);
 
-        $this->facilityRepository
-            ->expects($this->once())
-            ->method('getTotalAreaByInstitution')
-            ->with($institution)
-            ->willReturn(220.5);
+        $this->service->validateFacilityRequirements('invalid-institution-id');
+    }
 
-        $result = $this->facilityService->validateFacilityRequirements($institutionId);
-        $this->assertArrayHasKey('facilities', $result);
-        $this->assertArrayHasKey('overall_compliant', $result);
-        $this->assertArrayHasKey('facility_counts', $result);
-        $this->assertEquals(2, $result['facility_counts']['total']);
-        $this->assertCount(2, $result['facilities']);
+    public function testGenerateFacilityReport(): void
+    {
+        // 创建测试机构和设施
+        $institutionService = self::getService(InstitutionService::class);
+        $institution = $institutionService->createInstitution([
+            'institutionName' => '测试机构_生成报告',
+            'institutionCode' => 'TEST_REP_' . uniqid(),
+            'registrationNumber' => 'REG_REP_' . uniqid(),
+            'institutionType' => '企业',
+            'legalPerson' => '张三',
+            'contactPerson' => '李四',
+            'contactPhone' => '13800138000',
+            'contactEmail' => 'test@example.com',
+            'address' => '测试地址',
+            'businessScope' => '职业技能培训',
+            'establishDate' => new \DateTimeImmutable('2020-01-01'),
+        ]);
+
+        $facilityData = $this->getValidFacilityData();
+        $this->service->addFacility($institution->getId(), $facilityData);
+
+        // 生成报告
+        $report = $this->service->generateFacilityReport($institution->getId());
+
+        self::assertArrayHasKey('institution', $report);
+        self::assertArrayHasKey('summary', $report);
+        self::assertArrayHasKey('statistics', $report);
+        self::assertArrayHasKey('maintenance', $report);
+        self::assertArrayHasKey('compliance', $report);
+        self::assertArrayHasKey('generated_at', $report);
+        self::assertInstanceOf(\DateTimeImmutable::class, $report['generated_at']);
+    }
+
+    public function testGenerateFacilityReportWithInvalidInstitution(): void
+    {
+        $this->expectException(InstitutionNotFoundException::class);
+
+        $this->service->generateFacilityReport('invalid-institution-id');
+    }
+
+    public function testBatchScheduleInspections(): void
+    {
+        // 创建测试机构和多个设施
+        $institutionService = self::getService(InstitutionService::class);
+        $institution = $institutionService->createInstitution([
+            'institutionName' => '测试机构_批量调度',
+            'institutionCode' => 'TEST_BATCH_' . uniqid(),
+            'registrationNumber' => 'REG_BATCH_' . uniqid(),
+            'institutionType' => '企业',
+            'legalPerson' => '张三',
+            'contactPerson' => '李四',
+            'contactPhone' => '13800138000',
+            'contactEmail' => 'test@example.com',
+            'address' => '测试地址',
+            'businessScope' => '职业技能培训',
+            'establishDate' => new \DateTimeImmutable('2020-01-01'),
+        ]);
+
+        $facilityIds = [];
+        for ($i = 1; $i <= 3; ++$i) {
+            $facilityData = [
+                'facilityType' => '教室',
+                'facilityName' => "教室{$i}",
+                'facilityLocation' => "1楼10{$i}室",
+                'facilityArea' => 100.0,
+                'capacity' => 50,
+                'equipmentList' => ['投影仪'],
+                'safetyEquipment' => ['灭火器'],
+                'facilityStatus' => '正常使用',
+            ];
+            $facility = $this->service->addFacility($institution->getId(), $facilityData);
+            $facilityIds[] = $facility->getId();
+        }
+
+        // 批量安排检查
+        $baseDate = new \DateTimeImmutable('+7 days');
+        $results = $this->service->batchScheduleInspections($facilityIds, $baseDate, 7);
+
+        self::assertCount(3, $results);
+        foreach ($results as $result) {
+            self::assertArrayHasKey('facility_id', $result);
+            self::assertArrayHasKey('success', $result);
+            self::assertTrue($result['success']);
+            self::assertArrayHasKey('scheduled_date', $result);
+        }
+    }
+
+    public function testBatchScheduleInspectionsWithInvalidId(): void
+    {
+        $facilityIds = ['invalid-id-1', 'invalid-id-2'];
+        $baseDate = new \DateTimeImmutable('+7 days');
+
+        $results = $this->service->batchScheduleInspections($facilityIds, $baseDate, 7);
+
+        self::assertCount(2, $results);
+        foreach ($results as $result) {
+            self::assertFalse($result['success']);
+            self::assertArrayHasKey('error', $result);
+        }
+    }
+
+    public function testAddEquipmentToFacility(): void
+    {
+        // 创建测试机构和设施
+        $institutionService = self::getService(InstitutionService::class);
+        $institution = $institutionService->createInstitution([
+            'institutionName' => '测试机构_添加设备',
+            'institutionCode' => 'TEST_EQ_' . uniqid(),
+            'registrationNumber' => 'REG_EQ_' . uniqid(),
+            'institutionType' => '企业',
+            'legalPerson' => '张三',
+            'contactPerson' => '李四',
+            'contactPhone' => '13800138000',
+            'contactEmail' => 'test@example.com',
+            'address' => '测试地址',
+            'businessScope' => '职业技能培训',
+            'establishDate' => new \DateTimeImmutable('2020-01-01'),
+        ]);
+
+        $facilityData = $this->getValidFacilityData();
+        $facility = $this->service->addFacility($institution->getId(), $facilityData);
+
+        $initialEquipmentCount = count($facility->getEquipmentList());
+
+        // 添加单个设备
+        $newEquipment = ['name' => '电脑', 'model' => 'Dell XPS', 'quantity' => 1];
+        $updatedFacility = $this->service->addEquipmentToFacility($facility->getId(), $newEquipment);
+
+        $equipmentList = $updatedFacility->getEquipmentList();
+        self::assertCount($initialEquipmentCount + 1, $equipmentList);
+        self::assertContains($newEquipment, $equipmentList);
+    }
+
+    public function testAddEquipmentToFacilityWithInvalidId(): void
+    {
+        $this->expectException(FacilityNotFoundException::class);
+
+        $this->service->addEquipmentToFacility('invalid-id', ['name' => '设备']);
+    }
+
+    public function testAddSafetyEquipmentToFacility(): void
+    {
+        // 创建测试机构和设施
+        $institutionService = self::getService(InstitutionService::class);
+        $institution = $institutionService->createInstitution([
+            'institutionName' => '测试机构_添加安全设备',
+            'institutionCode' => 'TEST_SAFE_' . uniqid(),
+            'registrationNumber' => 'REG_SAFE_' . uniqid(),
+            'institutionType' => '企业',
+            'legalPerson' => '张三',
+            'contactPerson' => '李四',
+            'contactPhone' => '13800138000',
+            'contactEmail' => 'test@example.com',
+            'address' => '测试地址',
+            'businessScope' => '职业技能培训',
+            'establishDate' => new \DateTimeImmutable('2020-01-01'),
+        ]);
+
+        $facilityData = $this->getValidFacilityData();
+        $facility = $this->service->addFacility($institution->getId(), $facilityData);
+
+        $initialSafetyEquipmentCount = count($facility->getSafetyEquipment());
+
+        // 添加安全设备
+        $newSafetyEquipment = ['name' => '急救箱', 'type' => '标准型', 'quantity' => 1];
+        $updatedFacility = $this->service->addSafetyEquipmentToFacility($facility->getId(), $newSafetyEquipment);
+
+        $safetyEquipmentList = $updatedFacility->getSafetyEquipment();
+        self::assertCount($initialSafetyEquipmentCount + 1, $safetyEquipmentList);
+        self::assertContains($newSafetyEquipment, $safetyEquipmentList);
+    }
+
+    public function testAddSafetyEquipmentToFacilityWithInvalidId(): void
+    {
+        $this->expectException(FacilityNotFoundException::class);
+
+        $this->service->addSafetyEquipmentToFacility('invalid-id', ['name' => '安全设备']);
     }
 
     /**
-     * 测试生成设施报告
+     * @return array<string, mixed>
      */
-    public function testGenerateFacilityReport(): void
+    private function getValidFacilityData(): array
     {
-        $institutionId = 'institution-id';
-        $institution = $this->createMock(Institution::class);
-        $institution->method('getId')->willReturn($institutionId);
-        $institution->method('getInstitutionName')->willReturn('测试机构');
-
-        $facility = $this->createMock(InstitutionFacility::class);
-        $facility->method('getFacilityType')->willReturn('教室');
-        $facility->method('getFacilityArea')->willReturn(120.5);
-        $facility->method('getCapacity')->willReturn(50);
-        $facility->method('getFacilityStatus')->willReturn('正常使用');
-
-        $facilities = [$facility];
-
-        $this->institutionRepository
-            ->expects($this->exactly(2))
-            ->method('find')
-            ->with($institutionId)
-            ->willReturn($institution);
-
-        $this->facilityRepository
-            ->expects($this->exactly(2))
-            ->method('findByInstitution')
-            ->with($institution)
-            ->willReturn($facilities);
-
-        $this->facilityRepository
-            ->expects($this->exactly(2))
-            ->method('getTotalAreaByInstitution')
-            ->with($institution)
-            ->willReturn(120.5);
-
-        $report = $this->facilityService->generateFacilityReport($institutionId);
-        $this->assertArrayHasKey('institution', $report);
-        $this->assertArrayHasKey('summary', $report);
-        $this->assertEquals('测试机构', $report['institution']['name']);
-        $this->assertEquals(1, $report['summary']['total_facilities']);
-        $this->assertEquals(120.5, $report['summary']['total_area']);
-        $this->assertEquals(50, $report['summary']['total_capacity']);
+        return [
+            'facilityType' => '教室',
+            'facilityName' => '测试教室1',
+            'facilityLocation' => '1楼101室',
+            'facilityArea' => 100.0,
+            'capacity' => 50,
+            'equipmentList' => [
+                ['name' => '投影仪', 'model' => 'Pro-2024', 'quantity' => 1],
+                ['name' => '白板', 'model' => 'Standard', 'quantity' => 2],
+            ],
+            'safetyEquipment' => [
+                ['name' => '灭火器', 'type' => 'CO2', 'quantity' => 2],
+                ['name' => '安全出口标识', 'type' => 'LED', 'quantity' => 4],
+            ],
+            'facilityStatus' => '正常使用',
+        ];
     }
-} 
+}

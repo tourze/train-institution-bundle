@@ -4,19 +4,46 @@ declare(strict_types=1);
 
 namespace Tourze\TrainInstitutionBundle\Tests\Entity;
 
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use Tourze\PHPUnitDoctrineEntity\AbstractEntityTestCase;
 use Tourze\TrainInstitutionBundle\Entity\Institution;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionChangeRecord;
 
 /**
  * InstitutionChangeRecord 实体单元测试
+ *
+ * @internal
  */
-class InstitutionChangeRecordTest extends TestCase
+#[CoversClass(InstitutionChangeRecord::class)]
+final class InstitutionChangeRecordTest extends AbstractEntityTestCase
 {
     private Institution $institution;
 
+    protected function createEntity(): object
+    {
+        return new InstitutionChangeRecord();
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: mixed}>
+     */
+    public static function propertiesProvider(): array
+    {
+        return [
+            'changeType' => ['changeType', '测试变更类型'],
+            'changeDetails' => ['changeDetails', ['key' => 'value']],
+            'beforeData' => ['beforeData', ['key' => 'before_value']],
+            'afterData' => ['afterData', ['key' => 'after_value']],
+            'changeReason' => ['changeReason', '测试变更原因'],
+            'changeOperator' => ['changeOperator', '测试操作员'],
+            'approvalStatus' => ['approvalStatus', '已审批'],
+            'approver' => ['approver', '测试审批人'],
+        ];
+    }
+
     protected function setUp(): void
     {
+        parent::setUp();
         $this->institution = Institution::create(
             '测试培训机构',
             'TEST001',
@@ -35,27 +62,29 @@ class InstitutionChangeRecordTest extends TestCase
     /**
      * 测试构造函数
      */
-    public function test_constructor_setsDefaultValues(): void
+    public function testConstructorSetsDefaultValues(): void
     {
         $record = new InstitutionChangeRecord();
 
-        $this->assertNotEmpty($record->getId());
-        $this->assertEquals('待审批', $record->getApprovalStatus());
-        $this->assertNull($record->getApprover());
-        $this->assertNull($record->getApprovalDate());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $record->getChangeDate());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $record->getCreateTime());
+        self::assertNotEmpty($record->getId());
+        self::assertEquals('待审批', $record->getApprovalStatus());
+        self::assertNull($record->getApprover());
+        self::assertNull($record->getApprovalDate());
+        // 类型系统保证返回非null DateTimeImmutable，验证时间合理性
+        self::assertLessThanOrEqual(new \DateTimeImmutable(), $record->getChangeDate());
+        self::assertLessThanOrEqual(new \DateTimeImmutable(), $record->getCreateTime());
+        self::assertEquals($record->getChangeDate()->format('Y-m-d'), $record->getCreateTime()->format('Y-m-d'));
     }
 
     /**
      * 测试create静态方法
      */
-    public function test_create_withValidData(): void
+    public function testCreateWithValidData(): void
     {
         $changeDetails = [
             'field' => 'institutionName',
             'oldValue' => '旧机构名称',
-            'newValue' => '新机构名称'
+            'newValue' => '新机构名称',
         ];
         $beforeData = ['institutionName' => '旧机构名称'];
         $afterData = ['institutionName' => '新机构名称'];
@@ -71,20 +100,20 @@ class InstitutionChangeRecordTest extends TestCase
             '待审批'
         );
 
-        $this->assertSame($this->institution, $record->getInstitution());
-        $this->assertEquals('机构信息变更', $record->getChangeType());
-        $this->assertEquals($changeDetails, $record->getChangeDetails());
-        $this->assertEquals($beforeData, $record->getBeforeData());
-        $this->assertEquals($afterData, $record->getAfterData());
-        $this->assertEquals('业务发展需要', $record->getChangeReason());
-        $this->assertEquals('管理员', $record->getChangeOperator());
-        $this->assertEquals('待审批', $record->getApprovalStatus());
+        self::assertSame($this->institution, $record->getInstitution());
+        self::assertEquals('机构信息变更', $record->getChangeType());
+        self::assertEquals($changeDetails, $record->getChangeDetails());
+        self::assertEquals($beforeData, $record->getBeforeData());
+        self::assertEquals($afterData, $record->getAfterData());
+        self::assertEquals('业务发展需要', $record->getChangeReason());
+        self::assertEquals('管理员', $record->getChangeOperator());
+        self::assertEquals('待审批', $record->getApprovalStatus());
     }
 
     /**
      * 测试create静态方法使用默认审批状态
      */
-    public function test_create_withDefaultApprovalStatus(): void
+    public function testCreateWithDefaultApprovalStatus(): void
     {
         $record = InstitutionChangeRecord::create(
             $this->institution,
@@ -96,13 +125,13 @@ class InstitutionChangeRecordTest extends TestCase
             '系统管理员'
         );
 
-        $this->assertEquals('待审批', $record->getApprovalStatus());
+        self::assertEquals('待审批', $record->getApprovalStatus());
     }
 
     /**
      * 测试获取机构
      */
-    public function test_getInstitution_returnsCorrectInstitution(): void
+    public function testGetInstitutionReturnsCorrectInstitution(): void
     {
         $record = InstitutionChangeRecord::create(
             $this->institution,
@@ -114,13 +143,13 @@ class InstitutionChangeRecordTest extends TestCase
             '测试操作员'
         );
 
-        $this->assertSame($this->institution, $record->getInstitution());
+        self::assertSame($this->institution, $record->getInstitution());
     }
 
     /**
      * 测试获取变更类型
      */
-    public function test_getChangeType_returnsCorrectType(): void
+    public function testGetChangeTypeReturnsCorrectType(): void
     {
         $record = InstitutionChangeRecord::create(
             $this->institution,
@@ -132,18 +161,18 @@ class InstitutionChangeRecordTest extends TestCase
             '资质管理员'
         );
 
-        $this->assertEquals('资质变更', $record->getChangeType());
+        self::assertEquals('资质变更', $record->getChangeType());
     }
 
     /**
      * 测试获取变更详情
      */
-    public function test_getChangeDetails_returnsCorrectDetails(): void
+    public function testGetChangeDetailsReturnsCorrectDetails(): void
     {
         $changeDetails = [
             'qualificationId' => 'QUAL001',
             'action' => 'renew',
-            'newValidTo' => '2025-12-31'
+            'newValidTo' => '2025-12-31',
         ];
 
         $record = InstitutionChangeRecord::create(
@@ -156,17 +185,17 @@ class InstitutionChangeRecordTest extends TestCase
             '资质管理员'
         );
 
-        $this->assertEquals($changeDetails, $record->getChangeDetails());
+        self::assertEquals($changeDetails, $record->getChangeDetails());
     }
 
     /**
      * 测试获取变更前数据
      */
-    public function test_getBeforeData_returnsCorrectData(): void
+    public function testGetBeforeDataReturnsCorrectData(): void
     {
         $beforeData = [
             'institutionName' => '原机构名称',
-            'legalRepresentative' => '原法人代表'
+            'legalRepresentative' => '原法人代表',
         ];
 
         $record = InstitutionChangeRecord::create(
@@ -179,17 +208,17 @@ class InstitutionChangeRecordTest extends TestCase
             '管理员'
         );
 
-        $this->assertEquals($beforeData, $record->getBeforeData());
+        self::assertEquals($beforeData, $record->getBeforeData());
     }
 
     /**
      * 测试获取变更后数据
      */
-    public function test_getAfterData_returnsCorrectData(): void
+    public function testGetAfterDataReturnsCorrectData(): void
     {
         $afterData = [
             'institutionName' => '新机构名称',
-            'legalRepresentative' => '新法人代表'
+            'legalRepresentative' => '新法人代表',
         ];
 
         $record = InstitutionChangeRecord::create(
@@ -202,13 +231,13 @@ class InstitutionChangeRecordTest extends TestCase
             '管理员'
         );
 
-        $this->assertEquals($afterData, $record->getAfterData());
+        self::assertEquals($afterData, $record->getAfterData());
     }
 
     /**
      * 测试获取变更原因
      */
-    public function test_getChangeReason_returnsCorrectReason(): void
+    public function testGetChangeReasonReturnsCorrectReason(): void
     {
         $record = InstitutionChangeRecord::create(
             $this->institution,
@@ -220,23 +249,26 @@ class InstitutionChangeRecordTest extends TestCase
             '行政管理员'
         );
 
-        $this->assertEquals('办公地点搬迁', $record->getChangeReason());
+        self::assertEquals('办公地点搬迁', $record->getChangeReason());
     }
 
     /**
      * 测试获取变更日期
      */
-    public function test_getChangeDate_returnsDateTimeImmutable(): void
+    public function testGetChangeDateReturnsDateTimeImmutable(): void
     {
         $record = new InstitutionChangeRecord();
 
-        $this->assertInstanceOf(\DateTimeImmutable::class, $record->getChangeDate());
+        // 类型系统保证返回DateTimeImmutable，验证默认值为当前时间
+        $now = new \DateTimeImmutable();
+        self::assertEquals($now->format('Y-m-d'), $record->getChangeDate()->format('Y-m-d'));
+        self::assertLessThanOrEqual($now, $record->getChangeDate());
     }
 
     /**
      * 测试获取变更操作员
      */
-    public function test_getChangeOperator_returnsCorrectOperator(): void
+    public function testGetChangeOperatorReturnsCorrectOperator(): void
     {
         $record = InstitutionChangeRecord::create(
             $this->institution,
@@ -248,13 +280,13 @@ class InstitutionChangeRecordTest extends TestCase
             '设施管理员'
         );
 
-        $this->assertEquals('设施管理员', $record->getChangeOperator());
+        self::assertEquals('设施管理员', $record->getChangeOperator());
     }
 
     /**
      * 测试获取审批状态
      */
-    public function test_getApprovalStatus_returnsCorrectStatus(): void
+    public function testGetApprovalStatusReturnsCorrectStatus(): void
     {
         $record = InstitutionChangeRecord::create(
             $this->institution,
@@ -267,43 +299,46 @@ class InstitutionChangeRecordTest extends TestCase
             '已审批'
         );
 
-        $this->assertEquals('已审批', $record->getApprovalStatus());
+        self::assertEquals('已审批', $record->getApprovalStatus());
     }
 
     /**
      * 测试获取审批人 - 初始为null
      */
-    public function test_getApprover_initiallyNull(): void
+    public function testGetApproverInitiallyNull(): void
     {
         $record = new InstitutionChangeRecord();
 
-        $this->assertNull($record->getApprover());
+        self::assertNull($record->getApprover());
     }
 
     /**
      * 测试获取审批日期 - 初始为null
      */
-    public function test_getApprovalDate_initiallyNull(): void
+    public function testGetApprovalDateInitiallyNull(): void
     {
         $record = new InstitutionChangeRecord();
 
-        $this->assertNull($record->getApprovalDate());
+        self::assertNull($record->getApprovalDate());
     }
 
     /**
      * 测试获取创建时间
      */
-    public function test_getCreateTime_returnsDateTimeImmutable(): void
+    public function testGetCreateTimeReturnsDateTimeImmutable(): void
     {
         $record = new InstitutionChangeRecord();
 
-        $this->assertInstanceOf(\DateTimeImmutable::class, $record->getCreateTime());
+        // 类型系统保证返回DateTimeImmutable，验证默认值为当前时间
+        $now = new \DateTimeImmutable();
+        self::assertEquals($now->format('Y-m-d'), $record->getCreateTime()->format('Y-m-d'));
+        self::assertLessThanOrEqual($now, $record->getCreateTime());
     }
 
     /**
      * 测试审批通过
      */
-    public function test_approve_setsApprovalData(): void
+    public function testApproveSetsApprovalData(): void
     {
         $record = InstitutionChangeRecord::create(
             $this->institution,
@@ -317,16 +352,16 @@ class InstitutionChangeRecordTest extends TestCase
 
         $result = $record->approve('审批主管');
 
-        $this->assertSame($record, $result);
-        $this->assertEquals('已审批', $record->getApprovalStatus());
-        $this->assertEquals('审批主管', $record->getApprover());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $record->getApprovalDate());
+        self::assertSame($record, $result);
+        self::assertEquals('已审批', $record->getApprovalStatus());
+        self::assertEquals('审批主管', $record->getApprover());
+        self::assertInstanceOf(\DateTimeImmutable::class, $record->getApprovalDate());
     }
 
     /**
      * 测试审批拒绝
      */
-    public function test_reject_setsRejectionData(): void
+    public function testRejectSetsRejectionData(): void
     {
         $record = InstitutionChangeRecord::create(
             $this->institution,
@@ -340,50 +375,50 @@ class InstitutionChangeRecordTest extends TestCase
 
         $result = $record->reject('审批主管');
 
-        $this->assertSame($record, $result);
-        $this->assertEquals('已拒绝', $record->getApprovalStatus());
-        $this->assertEquals('审批主管', $record->getApprover());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $record->getApprovalDate());
+        self::assertSame($record, $result);
+        self::assertEquals('已拒绝', $record->getApprovalStatus());
+        self::assertEquals('审批主管', $record->getApprover());
+        self::assertInstanceOf(\DateTimeImmutable::class, $record->getApprovalDate());
     }
 
     /**
      * 测试审批时间的准确性
      */
-    public function test_approve_setsCurrentTime(): void
+    public function testApproveSetsCurrentTime(): void
     {
         $record = new InstitutionChangeRecord();
         $beforeApproval = new \DateTimeImmutable();
-        
+
         $record->approve('审批人');
-        
+
         $afterApproval = new \DateTimeImmutable();
         $approvalDate = $record->getApprovalDate();
 
-        $this->assertGreaterThanOrEqual($beforeApproval, $approvalDate);
-        $this->assertLessThanOrEqual($afterApproval, $approvalDate);
+        self::assertGreaterThanOrEqual($beforeApproval, $approvalDate);
+        self::assertLessThanOrEqual($afterApproval, $approvalDate);
     }
 
     /**
      * 测试拒绝时间的准确性
      */
-    public function test_reject_setsCurrentTime(): void
+    public function testRejectSetsCurrentTime(): void
     {
         $record = new InstitutionChangeRecord();
         $beforeRejection = new \DateTimeImmutable();
-        
+
         $record->reject('审批人');
-        
+
         $afterRejection = new \DateTimeImmutable();
         $approvalDate = $record->getApprovalDate();
 
-        $this->assertGreaterThanOrEqual($beforeRejection, $approvalDate);
-        $this->assertLessThanOrEqual($afterRejection, $approvalDate);
+        self::assertGreaterThanOrEqual($beforeRejection, $approvalDate);
+        self::assertLessThanOrEqual($afterRejection, $approvalDate);
     }
 
     /**
      * 测试复杂变更详情
      */
-    public function test_create_withComplexChangeDetails(): void
+    public function testCreateWithComplexChangeDetails(): void
     {
         $changeDetails = [
             'type' => 'facility_addition',
@@ -391,12 +426,12 @@ class InstitutionChangeRecordTest extends TestCase
                 'name' => '新实训室',
                 'type' => '实训场地',
                 'area' => 120.5,
-                'capacity' => 30
+                'capacity' => 30,
             ],
             'equipment' => [
                 ['name' => '电工实训台', 'quantity' => 10],
-                ['name' => '万用表', 'quantity' => 30]
-            ]
+                ['name' => '万用表', 'quantity' => 30],
+            ],
         ];
 
         $record = InstitutionChangeRecord::create(
@@ -409,15 +444,15 @@ class InstitutionChangeRecordTest extends TestCase
             '设施管理员'
         );
 
-        $this->assertEquals($changeDetails, $record->getChangeDetails());
-        $this->assertEquals(['facilityCount' => 5], $record->getBeforeData());
-        $this->assertEquals(['facilityCount' => 6], $record->getAfterData());
+        self::assertEquals($changeDetails, $record->getChangeDetails());
+        self::assertEquals(['facilityCount' => 5], $record->getBeforeData());
+        self::assertEquals(['facilityCount' => 6], $record->getAfterData());
     }
 
     /**
      * 测试空数组的变更数据
      */
-    public function test_create_withEmptyArrays(): void
+    public function testCreateWithEmptyArrays(): void
     {
         $record = InstitutionChangeRecord::create(
             $this->institution,
@@ -429,15 +464,15 @@ class InstitutionChangeRecordTest extends TestCase
             '系统管理员'
         );
 
-        $this->assertEquals([], $record->getChangeDetails());
-        $this->assertEquals([], $record->getBeforeData());
-        $this->assertEquals([], $record->getAfterData());
+        self::assertEquals([], $record->getChangeDetails());
+        self::assertEquals([], $record->getBeforeData());
+        self::assertEquals([], $record->getAfterData());
     }
 
     /**
      * 测试长文本变更原因
      */
-    public function test_create_withLongChangeReason(): void
+    public function testCreateWithLongChangeReason(): void
     {
         $longReason = str_repeat('这是一个很长的变更原因，用于测试系统对长文本的处理能力。', 10);
 
@@ -451,13 +486,13 @@ class InstitutionChangeRecordTest extends TestCase
             '高级管理员'
         );
 
-        $this->assertEquals($longReason, $record->getChangeReason());
+        self::assertEquals($longReason, $record->getChangeReason());
     }
 
     /**
      * 测试特殊字符的变更操作员
      */
-    public function test_create_withSpecialCharacterOperator(): void
+    public function testCreateWithSpecialCharacterOperator(): void
     {
         $specialOperator = '张三@系统管理员#2023';
 
@@ -471,13 +506,13 @@ class InstitutionChangeRecordTest extends TestCase
             $specialOperator
         );
 
-        $this->assertEquals($specialOperator, $record->getChangeOperator());
+        self::assertEquals($specialOperator, $record->getChangeOperator());
     }
 
     /**
      * 测试审批状态的各种值
      */
-    public function test_create_withDifferentApprovalStatuses(): void
+    public function testCreateWithDifferentApprovalStatuses(): void
     {
         $statuses = ['待审批', '已审批', '已拒绝', '审批中'];
 
@@ -493,14 +528,14 @@ class InstitutionChangeRecordTest extends TestCase
                 $status
             );
 
-            $this->assertEquals($status, $record->getApprovalStatus());
+            self::assertEquals($status, $record->getApprovalStatus());
         }
     }
 
     /**
      * 测试多次审批操作
      */
-    public function test_multipleApprovalOperations(): void
+    public function testMultipleApprovalOperations(): void
     {
         $record = new InstitutionChangeRecord();
 
@@ -516,23 +551,23 @@ class InstitutionChangeRecordTest extends TestCase
         $secondApprover = $record->getApprover();
         $secondApprovalDate = $record->getApprovalDate();
 
-        $this->assertEquals('审批人B', $secondApprover);
-        $this->assertNotEquals($firstApprover, $secondApprover);
-        $this->assertGreaterThan($firstApprovalDate, $secondApprovalDate);
+        self::assertEquals('审批人B', $secondApprover);
+        self::assertNotEquals($firstApprover, $secondApprover);
+        self::assertGreaterThan($firstApprovalDate, $secondApprovalDate);
     }
 
     /**
      * 测试审批后再拒绝
      */
-    public function test_approveAndThenReject(): void
+    public function testApproveAndThenReject(): void
     {
         $record = new InstitutionChangeRecord();
 
         $record->approve('审批人A');
-        $this->assertEquals('已审批', $record->getApprovalStatus());
+        self::assertEquals('已审批', $record->getApprovalStatus());
 
         $record->reject('审批人B');
-        $this->assertEquals('已拒绝', $record->getApprovalStatus());
-        $this->assertEquals('审批人B', $record->getApprover());
+        self::assertEquals('已拒绝', $record->getApprovalStatus());
+        self::assertEquals('审批人B', $record->getApprover());
     }
-} 
+}

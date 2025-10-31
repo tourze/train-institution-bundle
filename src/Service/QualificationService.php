@@ -5,213 +5,95 @@ declare(strict_types=1);
 namespace Tourze\TrainInstitutionBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
+use Tourze\TrainInstitutionBundle\Entity\Institution;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionQualification;
 use Tourze\TrainInstitutionBundle\Exception\DuplicateCertificateNumberException;
 use Tourze\TrainInstitutionBundle\Exception\InstitutionNotFoundException;
-use Tourze\TrainInstitutionBundle\Exception\InvalidQualificationDataException;
 use Tourze\TrainInstitutionBundle\Exception\QualificationExpiredException;
 use Tourze\TrainInstitutionBundle\Exception\QualificationNotFoundException;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionQualificationRepository;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
 
 /**
- * 机构资质服务
- *
- * 提供培训机构资质的核心业务逻辑，包括资质添加、更新、到期检查、续期等功能
+ * 机构资质服务 - 重构后的简化版本，复杂度降低至安全范围
  */
+#[Autoconfigure(public: true)]
 class QualificationService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly InstitutionRepository $institutionRepository,
-        private readonly InstitutionQualificationRepository $qualificationRepository
+        private readonly InstitutionQualificationRepository $qualificationRepository,
+        private readonly QualificationValidator $validator,
+        private readonly QualificationUpdater $updater,
+        private readonly QualificationFactory $factory,
     ) {
     }
 
     /**
      * 添加机构资质
+     * @param array<string, mixed> $qualificationData
      */
     public function addQualification(string $institutionId, array $qualificationData): InstitutionQualification
     {
-        // 验证数据
-        $this->validateQualificationData($qualificationData);
+        $this->validator->validateQualificationData($qualificationData);
+        $institution = $this->validateAndGetInstitution($institutionId);
+        $this->validateQualificationUniqueness($qualificationData);
+        $this->validator->validateDateRange($qualificationData);
 
-        // 获取机构
-        $institution = $this->institutionRepository->find($institutionId);
-        if ($institution === null) {
-            throw new InstitutionNotFoundException($institutionId);
-        }
-
-        // 检查证书编号唯一性
-        if ($this->qualificationRepository->isCertificateNumberExists($qualificationData['certificateNumber'])) {
-            throw new DuplicateCertificateNumberException($qualificationData['certificateNumber']);
-        }
-
-        // 验证有效期
-        if ($qualificationData['validFrom'] >= $qualificationData['validTo']) {
-            throw new InvalidQualificationDataException('有效期开始日期必须早于结束日期');
-        }
-
-        $qualification = InstitutionQualification::create(
-            $institution,
-            $qualificationData['qualificationType'],
-            $qualificationData['qualificationName'],
-            $qualificationData['certificateNumber'],
-            $qualificationData['issuingAuthority'],
-            $qualificationData['issueDate'],
-            $qualificationData['validFrom'],
-            $qualificationData['validTo'],
-            $qualificationData['qualificationScope'] ?? [],
-            $qualificationData['qualificationStatus'] ?? '有效',
-            $qualificationData['attachments'] ?? []
-        );
-
-        $this->entityManager->persist($qualification);
-        $this->entityManager->flush();
+        $qualification = $this->factory->createQualificationEntity($institution, $qualificationData);
+        $this->persistQualification($qualification);
 
         return $qualification;
     }
 
     /**
      * 更新机构资质
+     * @param array<string, mixed> $qualificationData
      */
     public function updateQualification(string $qualificationId, array $qualificationData): InstitutionQualification
     {
-        $qualification = $this->qualificationRepository->find($qualificationId);
-        if ($qualification === null) {
-            throw new QualificationNotFoundException($qualificationId);
-        }
+        $qualification = $this->getQualificationById($qualificationId);
 
-        // 更新字段
-        if (isset($qualificationData['qualificationType'])) {
-            $qualification->setQualificationType($qualificationData['qualificationType']);
-        }
-        if (isset($qualificationData['qualificationName'])) {
-            $qualification->setQualificationName($qualificationData['qualificationName']);
-        }
-        if (isset($qualificationData['certificateNumber'])) {
-            if ($this->qualificationRepository->isCertificateNumberExists($qualificationData['certificateNumber'], $qualificationId)) {
-                throw new DuplicateCertificateNumberException($qualificationData['certificateNumber']);
-            }
-            $qualification->setCertificateNumber($qualificationData['certificateNumber']);
-        }
-        if (isset($qualificationData['issuingAuthority'])) {
-            $qualification->setIssuingAuthority($qualificationData['issuingAuthority']);
-        }
-        if (isset($qualificationData['issueDate'])) {
-            $qualification->setIssueDate($qualificationData['issueDate']);
-        }
-        if (isset($qualificationData['validFrom'])) {
-            $qualification->setValidFrom($qualificationData['validFrom']);
-        }
-        if (isset($qualificationData['validTo'])) {
-            $qualification->setValidTo($qualificationData['validTo']);
-        }
-        if (isset($qualificationData['qualificationScope'])) {
-            $qualification->setQualificationScope($qualificationData['qualificationScope']);
-        }
-        if (isset($qualificationData['qualificationStatus'])) {
-            $qualification->setQualificationStatus($qualificationData['qualificationStatus']);
-        }
-        if (isset($qualificationData['attachments'])) {
-            $qualification->setAttachments($qualificationData['attachments']);
-        }
-
-        // 验证有效期
-        if ($qualification->getValidFrom() >= $qualification->getValidTo()) {
-            throw new InvalidQualificationDataException('有效期开始日期必须早于结束日期');
-        }
-
-        $this->entityManager->flush();
+        $this->validateUpdateData($qualificationData, $qualificationId);
+        $this->updater->applyQualificationUpdates($qualification, $qualificationData);
+        $this->validator->validateUpdatedQualification($qualification);
+        $this->persistQualificationChanges();
 
         return $qualification;
     }
 
     /**
      * 检查机构资质到期情况
+     * @return array<array<string, mixed>>
      */
     public function checkQualificationExpiry(string $institutionId): array
     {
-        $institution = $this->institutionRepository->find($institutionId);
-        if ($institution === null) {
-            throw new InstitutionNotFoundException($institutionId);
-        }
-
+        $institution = $this->validateAndGetInstitution($institutionId);
         $qualifications = $this->qualificationRepository->findByInstitution($institution);
-        $expiryInfo = [];
 
-        foreach ($qualifications as $qualification) {
-            $remainingDays = $qualification->getRemainingDays();
-            $status = 'normal';
-
-            if ($remainingDays <= 0) {
-                $status = 'expired';
-            } elseif ($remainingDays <= 30) {
-                $status = 'expiring_soon';
-            } elseif ($remainingDays <= 60) {
-                $status = 'warning';
-            }
-
-            $expiryInfo[] = [
-                'qualification' => $qualification,
-                'remaining_days' => $remainingDays,
-                'status' => $status,
-                'is_valid' => $qualification->isValid(),
-            ];
-        }
-
-        return $expiryInfo;
+        return $this->buildExpiryInfo($qualifications);
     }
 
     /**
      * 续期资质
+     * @param array<string, mixed> $renewalData
      */
     public function renewQualification(string $qualificationId, array $renewalData): InstitutionQualification
     {
-        $qualification = $this->qualificationRepository->find($qualificationId);
-        if ($qualification === null) {
-            throw new QualificationNotFoundException($qualificationId);
-        }
+        $qualification = $this->getQualificationById($qualificationId);
 
-        // 验证续期数据
-        if ((bool) empty($renewalData['newValidTo'])) {
-            throw new InvalidQualificationDataException('新的有效期结束日期不能为空');
-        }
-
-        $newValidTo = $renewalData['newValidTo'];
-        if ($newValidTo <= new \DateTimeImmutable()) {
-            throw new InvalidQualificationDataException('新的有效期结束日期必须是未来日期');
-        }
-
-        // 检查新证书编号唯一性（如果提供）
-        $newCertificateNumber = $renewalData['newCertificateNumber'] ?? null;
-        if ($newCertificateNumber && $this->qualificationRepository->isCertificateNumberExists($newCertificateNumber, $qualificationId)) {
-            throw new DuplicateCertificateNumberException($newCertificateNumber);
-        }
-
-        $qualification->renew($newValidTo, $newCertificateNumber);
-
-        // 更新其他信息
-        if (isset($renewalData['issuingAuthority'])) {
-            $qualification->setIssuingAuthority($renewalData['issuingAuthority']);
-        }
-        if (isset($renewalData['issueDate'])) {
-            $qualification->setIssueDate($renewalData['issueDate']);
-        }
-        if (isset($renewalData['qualificationScope'])) {
-            $qualification->setQualificationScope($renewalData['qualificationScope']);
-        }
-        if (isset($renewalData['attachments'])) {
-            $qualification->setAttachments($renewalData['attachments']);
-        }
-
-        $this->entityManager->flush();
+        $this->validator->validateRenewalData($renewalData, $qualificationId);
+        $this->updater->applyRenewalUpdates($qualification, $renewalData);
+        $this->persistQualificationChanges();
 
         return $qualification;
     }
 
     /**
      * 获取即将到期的资质
+     * @return array<InstitutionQualification>
      */
     public function getExpiringQualifications(int $days = 30): array
     {
@@ -220,31 +102,24 @@ class QualificationService
 
     /**
      * 验证资质范围
+     * @param array<string, mixed> $scope
      */
     public function validateQualificationScope(string $qualificationId, array $scope): bool
     {
-        $qualification = $this->qualificationRepository->find($qualificationId);
-        if ($qualification === null) {
-            throw new QualificationNotFoundException($qualificationId);
-        }
+        $qualification = $this->getQualificationById($qualificationId);
 
-        // 检查资质是否有效
         if (!$qualification->isValid()) {
             return false;
         }
 
-        // 检查每个培训类型是否在资质范围内
-        foreach ($scope as $trainingType) {
-            if (!$qualification->coversTrainingType($trainingType)) {
-                return false;
-            }
-        }
+        $trainingTypes = $this->normalizeTrainingTypes($scope);
 
-        return true;
+        return $this->allTrainingTypesCovered($qualification, $trainingTypes);
     }
 
     /**
      * 获取需要续期提醒的资质
+     * @return array<InstitutionQualification>
      */
     public function getQualificationsNeedingRenewalReminder(int $reminderDays = 60): array
     {
@@ -253,6 +128,7 @@ class QualificationService
 
     /**
      * 获取资质统计信息
+     * @return array<string, mixed>
      */
     public function getQualificationStatistics(): array
     {
@@ -261,98 +137,198 @@ class QualificationService
 
     /**
      * 分页获取资质列表
+     * @param array<string, mixed> $criteria
+     * @return array<string, mixed>
      */
     public function getQualificationsPaginated(int $page = 1, int $limit = 20, array $criteria = []): array
     {
         return $this->qualificationRepository->findPaginated($page, $limit, $criteria);
     }
 
-    /**
-     * 撤销资质
-     */
     public function revokeQualification(string $qualificationId, string $reason): InstitutionQualification
     {
-        $qualification = $this->qualificationRepository->find($qualificationId);
-        if ($qualification === null) {
-            throw new QualificationNotFoundException($qualificationId);
-        }
-
-        $qualification->setQualificationStatus('已撤销');
-        $this->entityManager->flush();
-
-        return $qualification;
+        return $this->changeQualificationStatus($qualificationId, '已撤销');
     }
 
-    /**
-     * 暂停资质
-     */
     public function suspendQualification(string $qualificationId, string $reason): InstitutionQualification
     {
-        $qualification = $this->qualificationRepository->find($qualificationId);
-        if ($qualification === null) {
-            throw new QualificationNotFoundException($qualificationId);
-        }
-
-        $qualification->setQualificationStatus('暂停');
-        $this->entityManager->flush();
-
-        return $qualification;
+        return $this->changeQualificationStatus($qualificationId, '暂停');
     }
 
-    /**
-     * 恢复资质
-     */
     public function restoreQualification(string $qualificationId): InstitutionQualification
     {
-        $qualification = $this->qualificationRepository->find($qualificationId);
-        if ($qualification === null) {
-            throw new QualificationNotFoundException($qualificationId);
-        }
+        $qualification = $this->getQualificationById($qualificationId);
 
-        // 检查是否在有效期内
         if ($qualification->getValidTo() <= new \DateTimeImmutable()) {
             throw new QualificationExpiredException();
         }
 
-        $qualification->setQualificationStatus('有效');
+        return $this->changeQualificationStatus($qualificationId, '有效');
+    }
+
+    /**
+     * 标准化培训类型数组
+     * @param array<string, mixed> $scope
+     * @return array<string>
+     */
+    private function normalizeTrainingTypes(array $scope): array
+    {
+        $trainingTypes = $scope['training_types'] ?? $scope;
+
+        if (is_array($trainingTypes)) {
+            return array_filter($trainingTypes, 'is_string');
+        }
+
+        return is_string($trainingTypes) ? [$trainingTypes] : [];
+    }
+
+    /**
+     * 检查所有培训类型是否被覆盖
+     * @param array<mixed> $trainingTypes
+     */
+    private function allTrainingTypesCovered(InstitutionQualification $qualification, array $trainingTypes): bool
+    {
+        foreach ($trainingTypes as $trainingType) {
+            if (is_string($trainingType) && !$qualification->coversTrainingType($trainingType)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function changeQualificationStatus(string $qualificationId, string $status): InstitutionQualification
+    {
+        $qualification = $this->getQualificationById($qualificationId);
+        $qualification->setQualificationStatus($status);
         $this->entityManager->flush();
 
         return $qualification;
     }
 
-    /**
-     * 验证资质数据
-     */
-    private function validateQualificationData(array $qualificationData): void
+    private function getQualificationById(string $qualificationId): InstitutionQualification
     {
-        $errors = [];
+        $qualification = $this->qualificationRepository->find($qualificationId);
+        if (null === $qualification) {
+            throw new QualificationNotFoundException($qualificationId);
+        }
+        assert($qualification instanceof InstitutionQualification);
 
-        // 必填字段验证
-        $requiredFields = [
-            'qualificationType' => '资质类型',
-            'qualificationName' => '资质名称',
-            'certificateNumber' => '证书编号',
-            'issuingAuthority' => '发证机关',
-            'issueDate' => '发证日期',
-            'validFrom' => '有效期开始日期',
-            'validTo' => '有效期结束日期',
+        return $qualification;
+    }
+
+    /**
+     * @param array<string, mixed> $qualificationData
+     */
+    private function validateUpdateData(array $qualificationData, string $qualificationId): void
+    {
+        $certificateNumber = $qualificationData['certificateNumber'] ?? null;
+        if (is_string($certificateNumber)) {
+            if ($this->qualificationRepository->isCertificateNumberExists($certificateNumber, $qualificationId)) {
+                throw new DuplicateCertificateNumberException($certificateNumber);
+            }
+        }
+    }
+
+    private function persistQualificationChanges(): void
+    {
+        $this->entityManager->flush();
+    }
+
+    private function validateAndGetInstitution(string $institutionId): Institution
+    {
+        $institution = $this->institutionRepository->find($institutionId);
+        if (null === $institution) {
+            throw new InstitutionNotFoundException($institutionId);
+        }
+        assert($institution instanceof Institution);
+
+        return $institution;
+    }
+
+    /**
+     * @param array<string, mixed> $qualificationData
+     */
+    private function validateQualificationUniqueness(array $qualificationData): void
+    {
+        $certificateNumber = $this->extractStringFromData($qualificationData, 'certificateNumber');
+        if ($this->qualificationRepository->isCertificateNumberExists($certificateNumber)) {
+            throw new DuplicateCertificateNumberException($certificateNumber);
+        }
+    }
+
+    private function persistQualification(InstitutionQualification $qualification): void
+    {
+        $this->entityManager->persist($qualification);
+        $this->entityManager->flush();
+    }
+
+    /**
+     * 构建到期信息数组
+     * @param array<InstitutionQualification> $qualifications
+     * @return array<array<string, mixed>>
+     */
+    private function buildExpiryInfo(array $qualifications): array
+    {
+        return array_map(
+            fn (InstitutionQualification $qualification) => $this->buildSingleExpiryInfo($qualification),
+            $qualifications
+        );
+    }
+
+    /**
+     * 构建单个资质的到期信息
+     * @return array<string, mixed>
+     */
+    private function buildSingleExpiryInfo(InstitutionQualification $qualification): array
+    {
+        $remainingDays = $qualification->getRemainingDays();
+        $status = $this->determineExpiryStatus($remainingDays);
+
+        return [
+            'qualification' => $qualification,
+            'remaining_days' => $remainingDays,
+            'status' => $status,
+            'is_valid' => $qualification->isValid(),
         ];
+    }
 
-        foreach ($requiredFields as $field => $label) {
-            if ((bool) empty($qualificationData[$field])) {
-                $errors[] = "{$label}不能为空";
-            }
+    private function determineExpiryStatus(int $remainingDays): string
+    {
+        if ($remainingDays <= 0) {
+            return 'expired';
         }
 
-        // 日期格式验证
-        $dateFields = ['issueDate', 'validFrom', 'validTo'];
-        foreach ($dateFields as $field) {
-            if (!empty($qualificationData[$field]) && !($qualificationData[$field] instanceof \DateTimeImmutable)) {
-                $errors[] = "{$requiredFields[$field]}必须是有效的日期格式";
-            }
+        if ($remainingDays <= 30) {
+            return 'expiring_soon';
         }
 
-        if (!empty($errors)) {
-            throw new InvalidQualificationDataException(implode('；', $errors));
+        if ($remainingDays <= 60) {
+            return 'warning';
         }
-    }}
+
+        return 'normal';
+    }
+
+    /**
+     * 安全提取字符串值
+     * @param array<string, mixed> $data
+     */
+    private function extractStringFromData(array $data, string $key): string
+    {
+        if (!isset($data[$key])) {
+            return '';
+        }
+
+        $value = $data[$key];
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (is_scalar($value)) {
+            return (string) $value;
+        }
+
+        return '';
+    }
+}

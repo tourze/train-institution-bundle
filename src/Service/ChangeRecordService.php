@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tourze\TrainInstitutionBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
+use Tourze\TrainInstitutionBundle\Entity\Institution;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionChangeRecord;
 use Tourze\TrainInstitutionBundle\Exception\ChangeRecordAlreadyProcessedException;
 use Tourze\TrainInstitutionBundle\Exception\ChangeRecordNotFoundException;
@@ -18,17 +20,19 @@ use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
  *
  * 提供培训机构变更记录的核心业务逻辑，包括变更记录、审批流程、历史查询等功能
  */
+#[Autoconfigure(public: true)]
 class ChangeRecordService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly InstitutionRepository $institutionRepository,
-        private readonly InstitutionChangeRecordRepository $changeRecordRepository
+        private readonly InstitutionChangeRecordRepository $changeRecordRepository,
     ) {
     }
 
     /**
      * 记录变更
+     * @param array<string, mixed> $changeData
      */
     public function recordChange(string $institutionId, array $changeData): InstitutionChangeRecord
     {
@@ -37,19 +41,29 @@ class ChangeRecordService
 
         // 获取机构
         $institution = $this->institutionRepository->find($institutionId);
-        if (!$institution) {
+        if (null === $institution) {
             throw new InstitutionNotFoundException($institutionId);
         }
+        assert($institution instanceof Institution);
+
+        // 类型安全提取
+        $changeType = $this->extractStringValue($changeData, 'changeType');
+        $changeDetails = $this->extractArrayValue($changeData, 'changeDetails');
+        $beforeData = $this->extractArrayValue($changeData, 'beforeData');
+        $afterData = $this->extractArrayValue($changeData, 'afterData');
+        $changeReason = $this->extractStringValue($changeData, 'changeReason');
+        $changeOperator = $this->extractStringValue($changeData, 'changeOperator');
+        $approvalStatus = $this->extractStringValue($changeData, 'approvalStatus', '待审批');
 
         $changeRecord = InstitutionChangeRecord::create(
             $institution,
-            $changeData['changeType'],
-            $changeData['changeDetails'],
-            $changeData['beforeData'],
-            $changeData['afterData'],
-            $changeData['changeReason'],
-            $changeData['changeOperator'],
-            $changeData['approvalStatus'] ?? '待审批'
+            $changeType,
+            $changeDetails,
+            $beforeData,
+            $afterData,
+            $changeReason,
+            $changeOperator,
+            $approvalStatus
         );
 
         $this->entityManager->persist($changeRecord);
@@ -64,11 +78,12 @@ class ChangeRecordService
     public function approveChange(string $recordId, string $approver): InstitutionChangeRecord
     {
         $changeRecord = $this->changeRecordRepository->find($recordId);
-        if (!$changeRecord) {
+        if (null === $changeRecord) {
             throw new ChangeRecordNotFoundException($recordId);
         }
+        assert($changeRecord instanceof InstitutionChangeRecord);
 
-        if ($changeRecord->getApprovalStatus() !== '待审批') {
+        if ('待审批' !== $changeRecord->getApprovalStatus()) {
             throw new ChangeRecordAlreadyProcessedException('审批');
         }
 
@@ -84,11 +99,12 @@ class ChangeRecordService
     public function rejectChange(string $recordId, string $approver, string $reason = ''): InstitutionChangeRecord
     {
         $changeRecord = $this->changeRecordRepository->find($recordId);
-        if (!$changeRecord) {
+        if (null === $changeRecord) {
             throw new ChangeRecordNotFoundException($recordId);
         }
+        assert($changeRecord instanceof InstitutionChangeRecord);
 
-        if ($changeRecord->getApprovalStatus() !== '待审批') {
+        if ('待审批' !== $changeRecord->getApprovalStatus()) {
             throw new ChangeRecordAlreadyProcessedException('拒绝');
         }
 
@@ -100,19 +116,22 @@ class ChangeRecordService
 
     /**
      * 获取变更历史
+     * @return array<InstitutionChangeRecord>
      */
     public function getChangeHistory(string $institutionId): array
     {
         $institution = $this->institutionRepository->find($institutionId);
-        if (!$institution) {
+        if (null === $institution) {
             throw new InstitutionNotFoundException($institutionId);
         }
+        assert($institution instanceof Institution);
 
         return $this->changeRecordRepository->findByInstitution($institution);
     }
 
     /**
      * 获取待审批的变更记录
+     * @return array<InstitutionChangeRecord>
      */
     public function getPendingChanges(): array
     {
@@ -121,6 +140,7 @@ class ChangeRecordService
 
     /**
      * 根据变更类型获取记录
+     * @return array<InstitutionChangeRecord>
      */
     public function getChangesByType(string $changeType): array
     {
@@ -129,13 +149,15 @@ class ChangeRecordService
 
     /**
      * 生成变更报告
+     * @return array<string, mixed>
      */
     public function generateChangeReport(string $institutionId): array
     {
         $institution = $this->institutionRepository->find($institutionId);
-        if (!$institution) {
+        if (null === $institution) {
             throw new InstitutionNotFoundException($institutionId);
         }
+        assert($institution instanceof Institution);
 
         $changeRecords = $this->changeRecordRepository->findByInstitution($institution);
 
@@ -161,7 +183,7 @@ class ChangeRecordService
         $recentChanges = array_slice($changeRecords, 0, 10);
 
         // 待审批的变更
-        $pendingChanges = array_filter($changeRecords, fn($r) => $r->getApprovalStatus() === '待审批');
+        $pendingChanges = array_filter($changeRecords, fn ($r) => '待审批' === $r->getApprovalStatus());
 
         return [
             'institution' => [
@@ -171,8 +193,8 @@ class ChangeRecordService
             'summary' => [
                 'total_changes' => count($changeRecords),
                 'pending_approval' => count($pendingChanges),
-                'approved_changes' => count(array_filter($changeRecords, fn($r) => $r->getApprovalStatus() === '已审批')),
-                'rejected_changes' => count(array_filter($changeRecords, fn($r) => $r->getApprovalStatus() === '已拒绝')),
+                'approved_changes' => count(array_filter($changeRecords, fn ($r) => '已审批' === $r->getApprovalStatus())),
+                'rejected_changes' => count(array_filter($changeRecords, fn ($r) => '已拒绝' === $r->getApprovalStatus())),
             ],
             'statistics' => [
                 'by_type' => $typeStats,
@@ -180,7 +202,7 @@ class ChangeRecordService
                 'by_operator' => $operatorStats,
                 'by_month' => $monthlyStats,
             ],
-            'recent_changes' => array_map(fn($r) => [
+            'recent_changes' => array_map(fn ($r) => [
                 'id' => $r->getId(),
                 'type' => $r->getChangeType(),
                 'operator' => $r->getChangeOperator(),
@@ -188,7 +210,7 @@ class ChangeRecordService
                 'status' => $r->getApprovalStatus(),
                 'approver' => $r->getApprover(),
             ], $recentChanges),
-            'pending_changes' => array_map(fn($r) => [
+            'pending_changes' => array_map(fn ($r) => [
                 'id' => $r->getId(),
                 'type' => $r->getChangeType(),
                 'operator' => $r->getChangeOperator(),
@@ -201,6 +223,8 @@ class ChangeRecordService
 
     /**
      * 批量审批变更
+     * @param array<string> $recordIds
+     * @return array<array<string, mixed>>
      */
     public function batchApproveChanges(array $recordIds, string $approver): array
     {
@@ -228,6 +252,8 @@ class ChangeRecordService
 
     /**
      * 批量拒绝变更
+     * @param array<string> $recordIds
+     * @return array<array<string, mixed>>
      */
     public function batchRejectChanges(array $recordIds, string $approver, string $reason = ''): array
     {
@@ -255,13 +281,15 @@ class ChangeRecordService
 
     /**
      * 获取变更详情
+     * @return array<string, mixed>
      */
     public function getChangeDetail(string $recordId): array
     {
         $changeRecord = $this->changeRecordRepository->find($recordId);
-        if (!$changeRecord) {
+        if (null === $changeRecord) {
             throw new ChangeRecordNotFoundException($recordId);
         }
+        assert($changeRecord instanceof InstitutionChangeRecord);
 
         return [
             'id' => $changeRecord->getId(),
@@ -285,37 +313,48 @@ class ChangeRecordService
 
     /**
      * 根据日期范围获取变更记录
+     * @return array<InstitutionChangeRecord>
      */
     public function getChangesByDateRange(string $institutionId, \DateTimeInterface $startDate, \DateTimeInterface $endDate): array
     {
         $institution = $this->institutionRepository->find($institutionId);
-        if (!$institution) {
+        if (null === $institution) {
             throw new InstitutionNotFoundException($institutionId);
         }
+        assert($institution instanceof Institution);
 
         $allChanges = $this->changeRecordRepository->findByInstitution($institution);
-        
+
         return array_filter($allChanges, function ($record) use ($startDate, $endDate) {
             $changeDate = $record->getChangeDate();
+
             return $changeDate >= $startDate && $changeDate <= $endDate;
         });
     }
 
     /**
      * 获取变更统计信息
+     * @return array<string, mixed>
      */
     public function getChangeStatistics(): array
     {
         $allRecords = $this->changeRecordRepository->findAll();
 
         $totalCount = count($allRecords);
-        $pendingCount = count(array_filter($allRecords, fn($r) => $r->getApprovalStatus() === '待审批'));
-        $approvedCount = count(array_filter($allRecords, fn($r) => $r->getApprovalStatus() === '已审批'));
-        $rejectedCount = count(array_filter($allRecords, fn($r) => $r->getApprovalStatus() === '已拒绝'));
+        $pendingCount = count(array_filter($allRecords, function (InstitutionChangeRecord $r): bool {
+            return '待审批' === $r->getApprovalStatus();
+        }));
+        $approvedCount = count(array_filter($allRecords, function (InstitutionChangeRecord $r): bool {
+            return '已审批' === $r->getApprovalStatus();
+        }));
+        $rejectedCount = count(array_filter($allRecords, function (InstitutionChangeRecord $r): bool {
+            return '已拒绝' === $r->getApprovalStatus();
+        }));
 
         // 按类型统计
         $typeStats = [];
         foreach ($allRecords as $record) {
+            assert($record instanceof InstitutionChangeRecord);
             $type = $record->getChangeType();
             $typeStats[$type] = ($typeStats[$type] ?? 0) + 1;
         }
@@ -332,13 +371,66 @@ class ChangeRecordService
 
     /**
      * 验证变更数据
+     * @param array<string, mixed> $changeData
      */
     private function validateChangeData(array $changeData): void
     {
         $errors = [];
 
-        // 必填字段验证
-        $requiredFields = [
+        $errors = array_merge($errors, $this->validateRequiredFields($changeData));
+        $errors = array_merge($errors, $this->validateDataTypes($changeData));
+
+        if ([] !== $errors) {
+            throw new InvalidChangeDataException(implode('；', $errors));
+        }
+    }
+
+    /**
+     * 验证必填字段
+     * @param array<string, mixed> $changeData
+     * @return array<string>
+     */
+    private function validateRequiredFields(array $changeData): array
+    {
+        $errors = [];
+        $requiredFields = $this->getRequiredFields();
+
+        foreach ($requiredFields as $field => $label) {
+            if (!isset($changeData[$field]) || '' === $changeData[$field] || [] === $changeData[$field]) {
+                $errors[] = "{$label}不能为空";
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * 验证数据类型
+     * @param array<string, mixed> $changeData
+     * @return array<string>
+     */
+    private function validateDataTypes(array $changeData): array
+    {
+        $errors = [];
+        $arrayFields = ['changeDetails', 'beforeData', 'afterData'];
+
+        foreach ($arrayFields as $field) {
+            if (isset($changeData[$field]) && '' !== $changeData[$field] && !is_array($changeData[$field])) {
+                $fieldLabel = $this->getFieldLabel($field);
+                $errors[] = "{$fieldLabel}必须是数组格式";
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * 获取必填字段定义
+     * @return array<string, string>
+     */
+    private function getRequiredFields(): array
+    {
+        return [
             'changeType' => '变更类型',
             'changeDetails' => '变更详情',
             'beforeData' => '变更前数据',
@@ -346,27 +438,61 @@ class ChangeRecordService
             'changeReason' => '变更原因',
             'changeOperator' => '变更操作人',
         ];
+    }
 
-        foreach ($requiredFields as $field => $label) {
-            if ((bool) empty($changeData[$field])) {
-                $errors[] = "{$label}不能为空";
-            }
+    /**
+     * 获取字段标签
+     */
+    private function getFieldLabel(string $field): string
+    {
+        $labels = [
+            'changeDetails' => '变更详情',
+            'beforeData' => '变更前数据',
+            'afterData' => '变更后数据',
+        ];
+
+        return $labels[$field] ?? $field;
+    }
+
+    /**
+     * 安全提取字符串值
+     * @param array<string, mixed> $data
+     */
+    private function extractStringValue(array $data, string $key, string $default = ''): string
+    {
+        if (!isset($data[$key])) {
+            return $default;
         }
 
-        // 数据类型验证
-        if (!empty($changeData['changeDetails']) && !is_array($changeData['changeDetails'])) {
-            $errors[] = '变更详情必须是数组格式';
+        $value = $data[$key];
+        if (is_string($value)) {
+            return $value;
         }
 
-        if (!empty($changeData['beforeData']) && !is_array($changeData['beforeData'])) {
-            $errors[] = '变更前数据必须是数组格式';
+        if (is_scalar($value)) {
+            return (string) $value;
         }
 
-        if (!empty($changeData['afterData']) && !is_array($changeData['afterData'])) {
-            $errors[] = '变更后数据必须是数组格式';
+        return $default;
+    }
+
+    /**
+     * 安全提取数组值
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function extractArrayValue(array $data, string $key): array
+    {
+        if (!isset($data[$key])) {
+            return [];
         }
 
-        if (!empty($errors)) {
-            throw new InvalidChangeDataException(implode('；', $errors));
+        $value = $data[$key];
+        if (!is_array($value)) {
+            return [];
         }
-    }}
+
+        /** @var array<string, mixed> */
+        return $value;
+    }
+}

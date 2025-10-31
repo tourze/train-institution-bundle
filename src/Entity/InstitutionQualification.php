@@ -6,7 +6,9 @@ namespace Tourze\TrainInstitutionBundle\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Stringable;
+use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Validator\Constraints as Assert;
+use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionQualificationRepository;
 
 /**
@@ -17,79 +19,96 @@ use Tourze\TrainInstitutionBundle\Repository\InstitutionQualificationRepository;
  */
 #[ORM\Entity(repositoryClass: InstitutionQualificationRepository::class)]
 #[ORM\Table(name: 'train_institution_qualification', options: ['comment' => '表描述'])]
-class InstitutionQualification implements Stringable
+class InstitutionQualification implements \Stringable
 {
+    use TimestampableAware;
+
     #[ORM\Id]
     #[ORM\Column(type: Types::STRING, length: 36, options: ['comment' => '资质ID'])]
+    #[ORM\CustomIdGenerator]
+    #[Assert\Length(max: 36)]
     private readonly string $id;
 
     #[ORM\ManyToOne(targetEntity: Institution::class, inversedBy: 'qualifications')]
-    #[ORM\JoinColumn(nullable: false)]
-    private Institution $institution;
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Institution $institution = null;
 
     #[ORM\Column(type: Types::STRING, length: 100, options: ['comment' => '资质类型：办学许可证、安全培训资质、特种作业培训资质等'])]
+    #[Assert\Length(max: 100)]
     private string $qualificationType;
 
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '资质名称'])]
+    #[Assert\Length(max: 255)]
     private string $qualificationName;
 
     #[ORM\Column(type: Types::STRING, length: 100, unique: true, options: ['comment' => '证书编号'])]
+    #[Assert\Length(max: 100)]
     private string $certificateNumber;
 
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '发证机关'])]
+    #[Assert\Length(max: 255)]
     private string $issuingAuthority;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE, options: ['comment' => '发证日期'])]
+    #[Assert\NotNull(message: '发证日期不能为空')]
+    #[Assert\LessThanOrEqual(value: 'today', message: '发证日期不能晚于今天')]
     private \DateTimeImmutable $issueDate;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE, options: ['comment' => '有效期开始日期'])]
+    #[Assert\NotNull(message: '有效期开始日期不能为空')]
+    #[Assert\GreaterThanOrEqual(propertyPath: 'issueDate', message: '有效期开始日期不能早于发证日期')]
     private \DateTimeImmutable $validFrom;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE, options: ['comment' => '有效期结束日期'])]
+    #[Assert\NotNull(message: '有效期结束日期不能为空')]
+    #[Assert\GreaterThan(propertyPath: 'validFrom', message: '有效期结束日期必须晚于开始日期')]
     private \DateTimeImmutable $validTo;
 
+    /**
+     * @var array<int, string>
+     */
     #[ORM\Column(type: Types::JSON, options: ['comment' => '资质范围：JSON格式存储资质适用的培训范围'])]
+    #[Assert\Type(type: 'array', message: '资质范围必须是数组格式')]
+    #[Assert\NotBlank(message: '资质范围不能为空')]
     private array $qualificationScope;
 
     #[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '资质状态：有效、已过期、已撤销、暂停等'])]
+    #[Assert\Length(max: 20)]
     private string $qualificationStatus;
 
+    /**
+     * @var array<string, mixed>
+     */
     #[ORM\Column(type: Types::JSON, options: ['comment' => '附件信息：JSON格式存储证书扫描件等附件信息'])]
+    #[Assert\Type(type: 'array', message: '附件信息必须是数组格式')]
     private array $attachments;
-
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '创建时间'])]
-    private \DateTimeImmutable $createTime;
-
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '更新时间'])]
-    private \DateTimeImmutable $updateTime;
 
     public function __construct()
     {
-        $this->id = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+        $this->id = Uuid::v7()->toRfc4122();
         $this->qualificationScope = [];
         $this->qualificationStatus = '有效';
         $this->attachments = [];
-        $this->createTime = new \DateTimeImmutable();
-        $this->updateTime = new \DateTimeImmutable();
     }
 
     /**
      * 创建新的机构资质实例
+     * @param array<int, string> $qualificationScope
+     * @param array<string, mixed> $attachments
      */
     public static function create(
-        Institution        $institution,
-        string             $qualificationType,
-        string             $qualificationName,
-        string             $certificateNumber,
-        string             $issuingAuthority,
+        Institution $institution,
+        string $qualificationType,
+        string $qualificationName,
+        string $certificateNumber,
+        string $issuingAuthority,
         \DateTimeImmutable $issueDate,
         \DateTimeImmutable $validFrom,
         \DateTimeImmutable $validTo,
-        array              $qualificationScope = [],
-        string             $qualificationStatus = '有效',
-        array              $attachments = []
-    ): self
-    {
+        array $qualificationScope = [],
+        string $qualificationStatus = '有效',
+        array $attachments = [],
+    ): self {
         $qualification = new self();
         $qualification->institution = $institution;
         $qualification->qualificationType = $qualificationType;
@@ -111,16 +130,14 @@ class InstitutionQualification implements Stringable
         return $this->id;
     }
 
-    public function getInstitution(): Institution
+    public function getInstitution(): ?Institution
     {
         return $this->institution;
     }
 
-    public function setInstitution(Institution $institution): self
+    public function setInstitution(?Institution $institution): void
     {
         $this->institution = $institution;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getQualificationType(): string
@@ -128,11 +145,9 @@ class InstitutionQualification implements Stringable
         return $this->qualificationType;
     }
 
-    public function setQualificationType(string $qualificationType): self
+    public function setQualificationType(string $qualificationType): void
     {
         $this->qualificationType = $qualificationType;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getQualificationName(): string
@@ -140,11 +155,9 @@ class InstitutionQualification implements Stringable
         return $this->qualificationName;
     }
 
-    public function setQualificationName(string $qualificationName): self
+    public function setQualificationName(string $qualificationName): void
     {
         $this->qualificationName = $qualificationName;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getCertificateNumber(): string
@@ -152,11 +165,9 @@ class InstitutionQualification implements Stringable
         return $this->certificateNumber;
     }
 
-    public function setCertificateNumber(string $certificateNumber): self
+    public function setCertificateNumber(string $certificateNumber): void
     {
         $this->certificateNumber = $certificateNumber;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getIssuingAuthority(): string
@@ -164,11 +175,9 @@ class InstitutionQualification implements Stringable
         return $this->issuingAuthority;
     }
 
-    public function setIssuingAuthority(string $issuingAuthority): self
+    public function setIssuingAuthority(string $issuingAuthority): void
     {
         $this->issuingAuthority = $issuingAuthority;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getIssueDate(): \DateTimeImmutable
@@ -176,11 +185,9 @@ class InstitutionQualification implements Stringable
         return $this->issueDate;
     }
 
-    public function setIssueDate(\DateTimeImmutable $issueDate): self
+    public function setIssueDate(\DateTimeImmutable $issueDate): void
     {
         $this->issueDate = $issueDate;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getValidFrom(): \DateTimeImmutable
@@ -188,11 +195,9 @@ class InstitutionQualification implements Stringable
         return $this->validFrom;
     }
 
-    public function setValidFrom(\DateTimeImmutable $validFrom): self
+    public function setValidFrom(\DateTimeImmutable $validFrom): void
     {
         $this->validFrom = $validFrom;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getValidTo(): \DateTimeImmutable
@@ -200,23 +205,25 @@ class InstitutionQualification implements Stringable
         return $this->validTo;
     }
 
-    public function setValidTo(\DateTimeImmutable $validTo): self
+    public function setValidTo(\DateTimeImmutable $validTo): void
     {
         $this->validTo = $validTo;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
+    /**
+     * @return array<int, string>
+     */
     public function getQualificationScope(): array
     {
         return $this->qualificationScope;
     }
 
-    public function setQualificationScope(array $qualificationScope): self
+    /**
+     * @param array<int, string> $qualificationScope
+     */
+    public function setQualificationScope(array $qualificationScope): void
     {
         $this->qualificationScope = $qualificationScope;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getQualificationStatus(): string
@@ -224,33 +231,25 @@ class InstitutionQualification implements Stringable
         return $this->qualificationStatus;
     }
 
-    public function setQualificationStatus(string $qualificationStatus): self
+    public function setQualificationStatus(string $qualificationStatus): void
     {
         $this->qualificationStatus = $qualificationStatus;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getAttachments(): array
     {
         return $this->attachments;
     }
 
-    public function setAttachments(array $attachments): self
+    /**
+     * @param array<string, mixed> $attachments
+     */
+    public function setAttachments(array $attachments): void
     {
         $this->attachments = $attachments;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
-    }
-
-    public function getCreateTime(): \DateTimeImmutable
-    {
-        return $this->createTime;
-    }
-
-    public function getUpdateTime(): \DateTimeImmutable
-    {
-        return $this->updateTime;
     }
 
     /**
@@ -259,7 +258,8 @@ class InstitutionQualification implements Stringable
     public function isValid(): bool
     {
         $now = new \DateTimeImmutable();
-        return $this->qualificationStatus === '有效'
+
+        return '有效' === $this->qualificationStatus
             && $this->validFrom <= $now
             && $this->validTo > $now;
     }
@@ -270,6 +270,7 @@ class InstitutionQualification implements Stringable
     public function isExpiringSoon(int $days = 30): bool
     {
         $futureDate = new \DateTimeImmutable("+{$days} days");
+
         return $this->isValid() && $this->validTo <= $futureDate;
     }
 
@@ -283,7 +284,9 @@ class InstitutionQualification implements Stringable
             return 0;
         }
 
-        return $now->diff($this->validTo)->days;
+        $diff = $now->diff($this->validTo);
+
+        return false === $diff->days ? 0 : (int) $diff->days;
     }
 
     /**
@@ -300,17 +303,16 @@ class InstitutionQualification implements Stringable
     public function renew(\DateTimeImmutable $newValidTo, ?string $newCertificateNumber = null): self
     {
         $this->validTo = $newValidTo;
-        if ($newCertificateNumber !== null) {
+        if (null !== $newCertificateNumber) {
             $this->certificateNumber = $newCertificateNumber;
         }
         $this->qualificationStatus = '有效';
-        $this->updateTime = new \DateTimeImmutable();
 
         return $this;
     }
 
     public function __toString(): string
     {
-        return (string)$this->id;
+        return $this->id;
     }
-} 
+}

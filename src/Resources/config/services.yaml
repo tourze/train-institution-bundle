@@ -7,6 +7,9 @@ services:
 
   Tourze\TrainInstitutionBundle\Command\:
     resource: '../../Command/'
+  Tourze\TrainInstitutionBundle\Controller\:
+    resource: '../../Controller/'
+    tags: ['controller.service_arguments']
   Tourze\TrainInstitutionBundle\Repository\:
     resource: '../../Repository/'
   Tourze\TrainInstitutionBundle\Service\:

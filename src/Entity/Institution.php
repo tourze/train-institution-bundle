@@ -8,7 +8,9 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Stringable;
+use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Validator\Constraints as Assert;
+use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
 
 /**
@@ -19,83 +21,103 @@ use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
  */
 #[ORM\Entity(repositoryClass: InstitutionRepository::class)]
 #[ORM\Table(name: 'train_institution', options: ['comment' => '表描述'])]
-class Institution implements Stringable
+class Institution implements \Stringable
 {
+    use TimestampableAware;
+
     #[ORM\Id]
+    #[ORM\CustomIdGenerator]
     #[ORM\Column(type: Types::STRING, length: 36, options: ['comment' => '机构ID'])]
+    #[Assert\Length(max: 36)]
     private readonly string $id;
 
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '机构名称'])]
+    #[Assert\Length(max: 255)]
     private string $institutionName;
 
     #[ORM\Column(type: Types::STRING, length: 50, unique: true, options: ['comment' => '机构代码'])]
+    #[Assert\Length(max: 50)]
     private string $institutionCode;
 
     #[ORM\Column(type: Types::STRING, length: 50, options: ['comment' => '机构类型：企业培训机构、社会培训机构、政府培训机构等'])]
+    #[Assert\Length(max: 50)]
     private string $institutionType;
 
     #[ORM\Column(type: Types::STRING, length: 100, options: ['comment' => '法人代表'])]
+    #[Assert\Length(max: 100)]
     private string $legalPerson;
 
     #[ORM\Column(type: Types::STRING, length: 100, options: ['comment' => '联系人'])]
+    #[Assert\Length(max: 100)]
     private string $contactPerson;
 
     #[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '联系电话'])]
+    #[Assert\Length(max: 20)]
+    #[Assert\Regex(pattern: '/^1[3-9]\d{9}$|^\d{3,4}-\d{7,8}$/', message: '联系电话格式不正确')]
     private string $contactPhone;
 
     #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '联系邮箱'])]
+    #[Assert\Length(max: 255)]
+    #[Assert\Email]
     private string $contactEmail;
 
     #[ORM\Column(type: Types::TEXT, options: ['comment' => '机构地址'])]
+    #[Assert\NotBlank(message: '机构地址不能为空')]
+    #[Assert\Length(max: 500, maxMessage: '机构地址不能超过500个字符')]
     private string $address;
 
     #[ORM\Column(type: Types::TEXT, options: ['comment' => '经营范围'])]
+    #[Assert\NotBlank(message: '经营范围不能为空')]
+    #[Assert\Length(max: 1000, maxMessage: '经营范围不能超过1000个字符')]
     private string $businessScope;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE, options: ['comment' => '成立日期'])]
+    #[Assert\NotNull(message: '成立日期不能为空')]
+    #[Assert\LessThanOrEqual(value: 'today', message: '成立日期不能晚于今天')]
     private \DateTimeImmutable $establishDate;
 
     #[ORM\Column(type: Types::STRING, length: 100, options: ['comment' => '注册号'])]
+    #[Assert\Length(max: 100)]
     private string $registrationNumber;
 
     #[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '机构状态：待审核、正常运营、暂停营业、注销等'])]
+    #[Assert\Length(max: 20)]
     private string $institutionStatus;
 
+    /**
+     * @var array<string, mixed>
+     */
     #[ORM\Column(type: Types::JSON, options: ['comment' => '组织架构（JSON格式）'])]
+    #[Assert\Type(type: 'array', message: '组织架构必须是数组格式')]
     private array $organizationStructure;
-
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '创建时间'])]
-    private \DateTimeImmutable $createTime;
-
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '更新时间'])]
-    private \DateTimeImmutable $updateTime;
 
     /**
      * 机构资质集合
+     * @var Collection<int, InstitutionQualification>
      */
     #[ORM\OneToMany(mappedBy: 'institution', targetEntity: InstitutionQualification::class, cascade: ['persist', 'remove'])]
     private Collection $qualifications;
 
     /**
      * 机构设施集合
+     * @var Collection<int, InstitutionFacility>
      */
     #[ORM\OneToMany(mappedBy: 'institution', targetEntity: InstitutionFacility::class, cascade: ['persist', 'remove'])]
     private Collection $facilities;
 
     /**
      * 变更记录集合
+     * @var Collection<int, InstitutionChangeRecord>
      */
     #[ORM\OneToMany(mappedBy: 'institution', targetEntity: InstitutionChangeRecord::class, cascade: ['persist', 'remove'])]
     private Collection $changeRecords;
 
     public function __construct()
     {
-        $this->id = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+        $this->id = Uuid::v7()->toRfc4122();
         $this->institutionStatus = '正常运营';
         $this->organizationStructure = [];
-        $this->createTime = new \DateTimeImmutable();
-        $this->updateTime = new \DateTimeImmutable();
-        
+
         $this->qualifications = new ArrayCollection();
         $this->facilities = new ArrayCollection();
         $this->changeRecords = new ArrayCollection();
@@ -103,6 +125,7 @@ class Institution implements Stringable
 
     /**
      * 创建新的培训机构实例
+     * @param array<string, mixed> $organizationStructure
      */
     public static function create(
         string $institutionName,
@@ -117,7 +140,8 @@ class Institution implements Stringable
         \DateTimeImmutable $establishDate,
         string $registrationNumber,
         string $institutionStatus = '待审核',
-        array $organizationStructure = []
+        /** @var array<string, mixed> */
+        array $organizationStructure = [],
     ): self {
         $institution = new self();
         $institution->institutionName = $institutionName;
@@ -133,7 +157,7 @@ class Institution implements Stringable
         $institution->registrationNumber = $registrationNumber;
         $institution->institutionStatus = $institutionStatus;
         $institution->organizationStructure = $organizationStructure;
-        
+
         return $institution;
     }
 
@@ -147,11 +171,9 @@ class Institution implements Stringable
         return $this->institutionName;
     }
 
-    public function setInstitutionName(string $institutionName): self
+    public function setInstitutionName(string $institutionName): void
     {
         $this->institutionName = $institutionName;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getInstitutionCode(): string
@@ -159,11 +181,9 @@ class Institution implements Stringable
         return $this->institutionCode;
     }
 
-    public function setInstitutionCode(string $institutionCode): self
+    public function setInstitutionCode(string $institutionCode): void
     {
         $this->institutionCode = $institutionCode;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getInstitutionType(): string
@@ -171,11 +191,9 @@ class Institution implements Stringable
         return $this->institutionType;
     }
 
-    public function setInstitutionType(string $institutionType): self
+    public function setInstitutionType(string $institutionType): void
     {
         $this->institutionType = $institutionType;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getLegalPerson(): string
@@ -183,11 +201,9 @@ class Institution implements Stringable
         return $this->legalPerson;
     }
 
-    public function setLegalPerson(string $legalPerson): self
+    public function setLegalPerson(string $legalPerson): void
     {
         $this->legalPerson = $legalPerson;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getContactPerson(): string
@@ -195,11 +211,9 @@ class Institution implements Stringable
         return $this->contactPerson;
     }
 
-    public function setContactPerson(string $contactPerson): self
+    public function setContactPerson(string $contactPerson): void
     {
         $this->contactPerson = $contactPerson;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getContactPhone(): string
@@ -207,11 +221,9 @@ class Institution implements Stringable
         return $this->contactPhone;
     }
 
-    public function setContactPhone(string $contactPhone): self
+    public function setContactPhone(string $contactPhone): void
     {
         $this->contactPhone = $contactPhone;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getContactEmail(): string
@@ -219,11 +231,9 @@ class Institution implements Stringable
         return $this->contactEmail;
     }
 
-    public function setContactEmail(string $contactEmail): self
+    public function setContactEmail(string $contactEmail): void
     {
         $this->contactEmail = $contactEmail;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getAddress(): string
@@ -231,11 +241,9 @@ class Institution implements Stringable
         return $this->address;
     }
 
-    public function setAddress(string $address): self
+    public function setAddress(string $address): void
     {
         $this->address = $address;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getBusinessScope(): string
@@ -243,11 +251,9 @@ class Institution implements Stringable
         return $this->businessScope;
     }
 
-    public function setBusinessScope(string $businessScope): self
+    public function setBusinessScope(string $businessScope): void
     {
         $this->businessScope = $businessScope;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getEstablishDate(): \DateTimeImmutable
@@ -255,11 +261,9 @@ class Institution implements Stringable
         return $this->establishDate;
     }
 
-    public function setEstablishDate(\DateTimeImmutable $establishDate): self
+    public function setEstablishDate(\DateTimeImmutable $establishDate): void
     {
         $this->establishDate = $establishDate;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getRegistrationNumber(): string
@@ -267,11 +271,9 @@ class Institution implements Stringable
         return $this->registrationNumber;
     }
 
-    public function setRegistrationNumber(string $registrationNumber): self
+    public function setRegistrationNumber(string $registrationNumber): void
     {
         $this->registrationNumber = $registrationNumber;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
     public function getInstitutionStatus(): string
@@ -279,33 +281,25 @@ class Institution implements Stringable
         return $this->institutionStatus;
     }
 
-    public function setInstitutionStatus(string $institutionStatus): self
+    public function setInstitutionStatus(string $institutionStatus): void
     {
         $this->institutionStatus = $institutionStatus;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getOrganizationStructure(): array
     {
         return $this->organizationStructure;
     }
 
-    public function setOrganizationStructure(array $organizationStructure): self
+    /**
+     * @param array<string, mixed> $organizationStructure
+     */
+    public function setOrganizationStructure(array $organizationStructure): void
     {
         $this->organizationStructure = $organizationStructure;
-        $this->updateTime = new \DateTimeImmutable();
-        return $this;
-    }
-
-    public function getCreateTime(): \DateTimeImmutable
-    {
-        return $this->createTime;
-    }
-
-    public function getUpdateTime(): \DateTimeImmutable
-    {
-        return $this->updateTime;
     }
 
     /**
@@ -316,18 +310,31 @@ class Institution implements Stringable
         return $this->qualifications;
     }
 
-    public function addQualification(InstitutionQualification $qualification): self
+    public function addQualification(InstitutionQualification $qualification): void
     {
         if (!$this->qualifications->contains($qualification)) {
             $this->qualifications->add($qualification);
         }
-        return $this;
     }
 
     public function removeQualification(InstitutionQualification $qualification): self
     {
         $this->qualifications->removeElement($qualification);
+
         return $this;
+    }
+
+    /**
+     * @param Collection<int, InstitutionQualification>|null $qualifications
+     */
+    public function setQualifications(?Collection $qualifications): void
+    {
+        // 为了测试兼容性，如果传入 null，清空集合而不是设置为 null
+        if (null === $qualifications) {
+            $this->qualifications->clear();
+        } else {
+            $this->qualifications = $qualifications;
+        }
     }
 
     /**
@@ -338,18 +345,31 @@ class Institution implements Stringable
         return $this->facilities;
     }
 
-    public function addFacility(InstitutionFacility $facility): self
+    public function addFacility(InstitutionFacility $facility): void
     {
         if (!$this->facilities->contains($facility)) {
             $this->facilities->add($facility);
         }
-        return $this;
     }
 
     public function removeFacility(InstitutionFacility $facility): self
     {
         $this->facilities->removeElement($facility);
+
         return $this;
+    }
+
+    /**
+     * @param Collection<int, InstitutionFacility>|null $facilities
+     */
+    public function setFacilities(?Collection $facilities): void
+    {
+        // 为了测试兼容性，如果传入 null，清空集合而不是设置为 null
+        if (null === $facilities) {
+            $this->facilities->clear();
+        } else {
+            $this->facilities = $facilities;
+        }
     }
 
     /**
@@ -365,70 +385,32 @@ class Institution implements Stringable
         if (!$this->changeRecords->contains($changeRecord)) {
             $this->changeRecords->add($changeRecord);
         }
+
         return $this;
     }
 
     public function removeChangeRecord(InstitutionChangeRecord $changeRecord): self
     {
         $this->changeRecords->removeElement($changeRecord);
+
         return $this;
     }
 
     /**
-     * 检查机构是否符合AQ8011-2023基本条件
+     * @param Collection<int, InstitutionChangeRecord>|null $changeRecords
      */
-    public function checkAQ8011Compliance(): array
+    public function setChangeRecords(?Collection $changeRecords): void
     {
-        $issues = [];
-
-        // 检查基本信息完整性
-        if (empty($this->institutionName)) {
-            $issues[] = '机构名称不能为空';
+        // 为了测试兼容性，如果传入 null，清空集合而不是设置为 null
+        if (null === $changeRecords) {
+            $this->changeRecords->clear();
+        } else {
+            $this->changeRecords = $changeRecords;
         }
-        
-        if (empty($this->legalPerson)) {
-            $issues[] = '法人代表不能为空';
-        }
-        
-        if (empty($this->contactPhone)) {
-            $issues[] = '联系电话不能为空';
-        }
-
-        // 检查机构状态
-        if ($this->institutionStatus !== '正常运营') {
-            $issues[] = '机构状态必须为正常运营';
-        }
-
-        return $issues;
-    }
-
-    /**
-     * 获取有效的资质证书
-     */
-    public function getValidQualifications(): Collection
-    {
-        return $this->qualifications->filter(function (InstitutionQualification $qualification) {
-            return $qualification->getQualificationStatus() === '有效' 
-                && $qualification->getValidTo() > new \DateTimeImmutable();
-        });
-    }
-
-    /**
-     * 获取即将到期的资质证书（30天内）
-     */
-    public function getExpiringQualifications(): Collection
-    {
-        $thirtyDaysLater = new \DateTimeImmutable('+30 days');
-        
-        return $this->qualifications->filter(function (InstitutionQualification $qualification) use ($thirtyDaysLater) {
-            return $qualification->getQualificationStatus() === '有效' 
-                && $qualification->getValidTo() <= $thirtyDaysLater
-                && $qualification->getValidTo() > new \DateTimeImmutable();
-        });
     }
 
     public function __toString(): string
     {
-        return (string) $this->id;
+        return $this->id;
     }
-} 
+}

@@ -5,14 +5,20 @@ declare(strict_types=1);
 namespace Tourze\TrainInstitutionBundle\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
+use Tourze\PHPUnitSymfonyKernelTest\Attribute\AsRepository;
 use Tourze\TrainInstitutionBundle\Entity\Institution;
 
 /**
  * 培训机构Repository
  *
  * 提供培训机构的数据访问方法，包括查询、统计等功能
+ * @extends ServiceEntityRepository<Institution>
  */
+#[Autoconfigure(public: true)]
+#[AsRepository(entityClass: Institution::class)]
 class InstitutionRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -30,6 +36,7 @@ class InstitutionRepository extends ServiceEntityRepository
 
     /**
      * 根据机构状态查找机构列表
+     * @return array<Institution>
      */
     public function findByStatus(string $status): array
     {
@@ -38,6 +45,7 @@ class InstitutionRepository extends ServiceEntityRepository
 
     /**
      * 根据机构类型查找机构列表
+     * @return array<Institution>
      */
     public function findByType(string $type): array
     {
@@ -46,6 +54,7 @@ class InstitutionRepository extends ServiceEntityRepository
 
     /**
      * 查找正常运营的机构
+     * @return array<Institution>
      */
     public function findActiveInstitutions(): array
     {
@@ -54,6 +63,7 @@ class InstitutionRepository extends ServiceEntityRepository
 
     /**
      * 查找待审核的机构
+     * @return array<Institution>
      */
     public function findPendingInstitutions(): array
     {
@@ -62,6 +72,7 @@ class InstitutionRepository extends ServiceEntityRepository
 
     /**
      * 根据法人代表查找机构
+     * @return array<Institution>
      */
     public function findByLegalPerson(string $legalPerson): array
     {
@@ -78,52 +89,62 @@ class InstitutionRepository extends ServiceEntityRepository
 
     /**
      * 模糊搜索机构名称
+     * @return array<Institution>
      */
     public function searchByName(string $name): array
     {
+        /** @var array<Institution> */
         return $this->createQueryBuilder('i')
             ->where('i.institutionName LIKE :name')
             ->setParameter('name', '%' . $name . '%')
             ->orderBy('i.institutionName', 'ASC')
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
     }
 
     /**
      * 根据地址搜索机构
+     * @return array<Institution>
      */
     public function searchByAddress(string $address): array
     {
+        /** @var array<Institution> */
         return $this->createQueryBuilder('i')
             ->where('i.address LIKE :address')
             ->setParameter('address', '%' . $address . '%')
             ->orderBy('i.institutionName', 'ASC')
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
     }
 
     /**
      * 获取机构统计信息
+     * @return array<string, mixed>
      */
     public function getStatistics(): array
     {
         $qb = $this->createQueryBuilder('i');
-        
+
         $totalCount = $qb->select('COUNT(i.id)')
             ->getQuery()
-            ->getSingleScalarResult();
+            ->getSingleScalarResult()
+        ;
 
         $statusStats = $this->createQueryBuilder('i')
             ->select('i.institutionStatus, COUNT(i.id) as count')
             ->groupBy('i.institutionStatus')
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
 
         $typeStats = $this->createQueryBuilder('i')
             ->select('i.institutionType, COUNT(i.id) as count')
             ->groupBy('i.institutionType')
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
 
         return [
             'total' => $totalCount,
@@ -134,33 +155,41 @@ class InstitutionRepository extends ServiceEntityRepository
 
     /**
      * 获取最近创建的机构
+     * @return array<Institution>
      */
     public function findRecentlyCreated(int $limit = 10): array
     {
+        /** @var array<Institution> */
         return $this->createQueryBuilder('i')
             ->orderBy('i.createTime', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
     }
 
     /**
      * 获取最近更新的机构
+     * @return array<Institution>
      */
     public function findRecentlyUpdated(int $limit = 10): array
     {
+        /** @var array<Institution> */
         return $this->createQueryBuilder('i')
             ->orderBy('i.updateTime', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
     }
 
     /**
      * 根据成立日期范围查找机构
+     * @return array<Institution>
      */
     public function findByEstablishDateRange(\DateTimeInterface $startDate, \DateTimeInterface $endDate): array
     {
+        /** @var array<Institution> */
         return $this->createQueryBuilder('i')
             ->where('i.establishDate >= :startDate')
             ->andWhere('i.establishDate <= :endDate')
@@ -168,7 +197,8 @@ class InstitutionRepository extends ServiceEntityRepository
             ->setParameter('endDate', $endDate)
             ->orderBy('i.establishDate', 'DESC')
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
     }
 
     /**
@@ -179,11 +209,13 @@ class InstitutionRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('i')
             ->select('COUNT(i.id)')
             ->where('i.institutionCode = :code')
-            ->setParameter('code', $institutionCode);
+            ->setParameter('code', $institutionCode)
+        ;
 
-        if ($excludeId !== null) {
+        if (null !== $excludeId) {
             $qb->andWhere('i.id != :excludeId')
-               ->setParameter('excludeId', $excludeId);
+                ->setParameter('excludeId', $excludeId)
+            ;
         }
 
         return $qb->getQuery()->getSingleScalarResult() > 0;
@@ -197,11 +229,13 @@ class InstitutionRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('i')
             ->select('COUNT(i.id)')
             ->where('i.registrationNumber = :number')
-            ->setParameter('number', $registrationNumber);
+            ->setParameter('number', $registrationNumber)
+        ;
 
-        if ($excludeId !== null) {
+        if (null !== $excludeId) {
             $qb->andWhere('i.id != :excludeId')
-               ->setParameter('excludeId', $excludeId);
+                ->setParameter('excludeId', $excludeId)
+            ;
         }
 
         return $qb->getQuery()->getSingleScalarResult() > 0;
@@ -209,49 +243,86 @@ class InstitutionRepository extends ServiceEntityRepository
 
     /**
      * 分页查询机构
+     * @param array<string, mixed> $criteria
+     * @return array<string, mixed>
      */
     public function findPaginated(int $page = 1, int $limit = 20, array $criteria = []): array
     {
-        $qb = $this->createQueryBuilder('i');
-
-        // 添加查询条件
-        if (!empty($criteria['status'])) {
-            $qb->andWhere('i.institutionStatus = :status')
-               ->setParameter('status', $criteria['status']);
-        }
-
-        if (!empty($criteria['type'])) {
-            $qb->andWhere('i.institutionType = :type')
-               ->setParameter('type', $criteria['type']);
-        }
-
-        if (!empty($criteria['name'])) {
-            $qb->andWhere('i.institutionName LIKE :name')
-               ->setParameter('name', '%' . $criteria['name'] . '%');
-        }
+        // 构建数据查询
+        $dataQb = $this->createQueryBuilder('i');
+        $this->applyCriteria($dataQb, $criteria);
 
         $offset = ($page - 1) * $limit;
-        
-        $results = $qb->orderBy('i.createTime', 'DESC')
+        $results = $dataQb->orderBy('i.createTime', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit)
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
 
-        // 获取总数
-        $totalQb = clone $qb;
-        $total = $totalQb->select('COUNT(i.id)')
-            ->setFirstResult(0)
-            ->setMaxResults(null)
+        // 构建计数查询
+        $countQb = $this->createQueryBuilder('i');
+        $this->applyCriteria($countQb, $criteria);
+        $total = $countQb->select('COUNT(i.id)')
             ->getQuery()
-            ->getSingleScalarResult();
+            ->getSingleScalarResult()
+        ;
 
         return [
             'data' => $results,
             'total' => $total,
             'page' => $page,
             'limit' => $limit,
-            'pages' => ceil($total / $limit),
+            'pages' => (int) ceil((int) $total / $limit),
         ];
     }
-} 
+
+    /**
+     * 应用查询条件
+     * @param array<string, mixed> $criteria
+     */
+    private function applyCriteria(QueryBuilder $qb, array $criteria): void
+    {
+        if (isset($criteria['status']) && '' !== $criteria['status']) {
+            $qb->andWhere('i.institutionStatus = :status')
+                ->setParameter('status', $criteria['status'])
+            ;
+        }
+
+        if (isset($criteria['type']) && '' !== $criteria['type']) {
+            $qb->andWhere('i.institutionType = :type')
+                ->setParameter('type', $criteria['type'])
+            ;
+        }
+
+        if (isset($criteria['name']) && '' !== $criteria['name'] && is_string($criteria['name'])) {
+            $qb->andWhere('i.institutionName LIKE :name')
+                ->setParameter('name', '%' . $criteria['name'] . '%')
+            ;
+        }
+    }
+
+    /**
+     * 保存实体
+     */
+    public function save(Institution $entity, bool $flush = true): void
+    {
+        $this->getEntityManager()->persist($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    /**
+     * 删除实体
+     */
+    public function remove(Institution $entity, bool $flush = true): void
+    {
+        $this->getEntityManager()->remove($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+}
