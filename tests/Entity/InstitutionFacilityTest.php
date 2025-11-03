@@ -277,116 +277,6 @@ final class InstitutionFacilityTest extends AbstractEntityTestCase
     }
 
     /**
-     * 测试安全设备检查 - 数组格式设备
-     *
-     * @deprecated 业务逻辑方法应该在服务层，不应在贫血实体中
-     */
-    public function testHasSafetyEquipmentWithArrayFormat(): void
-    {
-        self::markTestSkipped('业务逻辑方法hasSafetyEquipment不应在贫血实体中，应在服务层实现');
-    }
-
-    /**
-     * 测试安全设备检查 - 字符串格式设备
-     *
-     * @deprecated 业务逻辑方法应该在服务层，不应在贫血实体中
-     */
-    public function testHasSafetyEquipmentWithStringFormat(): void
-    {
-        self::markTestSkipped('业务逻辑方法hasSafetyEquipment不应在贫血实体中，应在服务层实现');
-    }
-
-    /**
-     * 测试检查需求判断 - 无下次检查日期
-     *
-     * @deprecated 业务逻辑方法应该在服务层，不应在贫血实体中
-     */
-    public function testNeedsInspectionWithNoNextInspectionDate(): void
-    {
-        self::markTestSkipped('业务逻辑方法needsInspection不应在贫血实体中，应在服务层实现');
-    }
-
-    /**
-     * 测试检查需求判断 - 检查日期已过
-     *
-     * @deprecated 业务逻辑方法应该在服务层，不应在贫血实体中
-     */
-    public function testNeedsInspectionWithPastInspectionDate(): void
-    {
-        self::markTestSkipped('业务逻辑方法needsInspection不应在贫血实体中，应在服务层实现');
-    }
-
-    /**
-     * 测试检查需求判断 - 检查日期未到
-     *
-     * @deprecated 业务逻辑方法应该在服务层，不应在贫血实体中
-     */
-    public function testNeedsInspectionWithFutureInspectionDate(): void
-    {
-        self::markTestSkipped('业务逻辑方法needsInspection不应在贫血实体中，应在服务层实现');
-    }
-
-    /**
-     * 测试利用率计算
-     *
-     * @deprecated 业务逻辑方法应该在服务层，不应在贫血实体中
-     */
-    public function testCalculateUtilizationRateReturnsZero(): void
-    {
-        self::markTestSkipped('业务逻辑方法calculateUtilizationRate不应在贫血实体中，应在服务层实现');
-    }
-
-    /**
-     * 测试添加设备
-     *
-     * @deprecated 业务逻辑方法应该在服务层，不应在贫血实体中
-     */
-    public function testAddEquipmentAddsToList(): void
-    {
-        self::markTestSkipped('业务逻辑方法addEquipment不应在贫血实体中，应在服务层实现');
-    }
-
-    /**
-     * 测试添加多个设备
-     *
-     * @deprecated 业务逻辑方法应该在服务层，不应在贫血实体中
-     */
-    public function testAddEquipmentMultipleEquipment(): void
-    {
-        self::markTestSkipped('业务逻辑方法addEquipment不应在贫血实体中，应在服务层实现');
-    }
-
-    /**
-     * 测试添加安全设备
-     *
-     * @deprecated 业务逻辑方法应该在服务层，不应在贫血实体中
-     */
-    public function testAddSafetyEquipmentAddsToList(): void
-    {
-        self::markTestSkipped('业务逻辑方法addSafetyEquipment不应在贫血实体中，应在服务层实现');
-    }
-
-    /**
-     * 测试安排检查
-     *
-     * @deprecated 业务逻辑方法应该在服务层，不应在贫血实体中
-     */
-    public function testScheduleInspectionSetsDate(): void
-    {
-        self::markTestSkipped('业务逻辑方法scheduleInspection不应在贫血实体中，应在服务层实现');
-    }
-
-    /**
-     * 测试完成检查
-     *
-     * @deprecated 业务逻辑方法应该在服务层，不应在贫血实体中
-     */
-    public function testCompleteInspectionSetsDates(): void
-    {
-        self::markTestSkipped('业务逻辑方法completeInspection不应在贫血实体中，应在服务层实现');
-    }
-
-    /**
      * 测试边界条件 - 零面积
      */
     public function testSetFacilityAreaWithZeroArea(): void
@@ -408,16 +298,6 @@ final class InstitutionFacilityTest extends AbstractEntityTestCase
         $facility->setCapacity(0);
 
         self::assertEquals(0, $facility->getCapacity());
-    }
-
-    /**
-     * 测试边界条件 - 空设备列表
-     *
-     * @deprecated 业务逻辑方法应该在服务层，不应在贫血实体中
-     */
-    public function testHasSafetyEquipmentWithEmptyList(): void
-    {
-        self::markTestSkipped('业务逻辑方法hasSafetyEquipment不应在贫血实体中，应在服务层实现');
     }
 
     /**

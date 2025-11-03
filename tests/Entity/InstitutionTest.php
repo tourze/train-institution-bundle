@@ -149,31 +149,6 @@ final class InstitutionTest extends AbstractEntityTestCase
     }
 
     /**
-     * 测试AQ8011合规性检查
-     */
-    public function testCheckAQ8011Compliance(): void
-    {
-        // 测试合规的机构
-        $compliantInstitution = Institution::create(
-            '合规机构',
-            'COMP001',
-            '企业培训机构',
-            '张三',
-            '李四',
-            '13800138000',
-            'test@example.com',
-            '北京市朝阳区测试路123号',
-            '安全生产培训',
-            new \DateTimeImmutable('2020-01-01'),
-            'REG123456789',
-            '正常运营'
-        );
-
-        // 业务逻辑方法checkAQ8011Compliance应该在服务层，不应在贫血实体中
-        self::markTestSkipped('业务逻辑方法checkAQ8011Compliance不应在贫血实体中，应在服务层实现');
-    }
-
-    /**
      * 测试资质管理
      */
     public function testQualificationManagement(): void
