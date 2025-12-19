@@ -5,22 +5,20 @@ declare(strict_types=1);
 namespace Tourze\TrainInstitutionBundle\Tests\Service;
 
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractIntegrationTestCase;
 use Tourze\TrainInstitutionBundle\Entity\Institution;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionFacility;
-use Tourze\TrainInstitutionBundle\Repository\InstitutionFacilityRepository;
 use Tourze\TrainInstitutionBundle\Service\FacilityReportGenerator;
 
 /**
  * @internal
  */
 #[CoversClass(FacilityReportGenerator::class)]
-final class FacilityReportGeneratorTest extends TestCase
+#[RunTestsInSeparateProcesses]
+final class FacilityReportGeneratorTest extends AbstractIntegrationTestCase
 {
     private FacilityReportGenerator $generator;
-
-    private MockObject&InstitutionFacilityRepository $repository;
 
     private Institution $institution;
 
@@ -36,18 +34,22 @@ final class FacilityReportGeneratorTest extends TestCase
 
     public function testGenerateSummaryStatistics(): void
     {
-        $facilities = [
-            $this->createFacility('教室1', '教室', 100.0, 50),
-            $this->createFacility('教室2', '教室', 80.0, 40),
-            $this->createFacility('实训场地', '实训场地', 200.0, 100),
-        ];
+        // 持久化机构到数据库
+        $entityManager = self::getEntityManager();
+        $entityManager->persist($this->institution);
+        $entityManager->flush();
 
-        $this->repository
-            ->expects(self::once())
-            ->method('getTotalAreaByInstitution')
-            ->with($this->institution)
-            ->willReturn(380.0)
-        ;
+        // 创建并持久化设施
+        $facility1 = $this->createFacility('教室1', '教室', 100.0, 50);
+        $facility2 = $this->createFacility('教室2', '教室', 80.0, 40);
+        $facility3 = $this->createFacility('实训场地', '实训场地', 200.0, 100);
+
+        $entityManager->persist($facility1);
+        $entityManager->persist($facility2);
+        $entityManager->persist($facility3);
+        $entityManager->flush();
+
+        $facilities = [$facility1, $facility2, $facility3];
 
         $result = $this->generator->generateSummaryStatistics($facilities, $this->institution);
 
@@ -87,14 +89,12 @@ final class FacilityReportGeneratorTest extends TestCase
 
     public function testGenerateSummaryStatisticsWithEmptyFacilities(): void
     {
-        $facilities = [];
+        // 持久化机构到数据库（但不添加设施）
+        $entityManager = self::getEntityManager();
+        $entityManager->persist($this->institution);
+        $entityManager->flush();
 
-        $this->repository
-            ->expects(self::once())
-            ->method('getTotalAreaByInstitution')
-            ->with($this->institution)
-            ->willReturn(0.0)
-        ;
+        $facilities = [];
 
         $result = $this->generator->generateSummaryStatistics($facilities, $this->institution);
 
@@ -239,13 +239,12 @@ final class FacilityReportGeneratorTest extends TestCase
         self::assertEmpty($result['inspection_list']);
     }
 
-    protected function setUp(): void
+    protected function onSetUp(): void
     {
-        $this->repository = $this->createMock(InstitutionFacilityRepository::class);
-        $this->generator = new FacilityReportGenerator($this->repository);
+        $this->generator = self::getService(FacilityReportGenerator::class);
         $this->institution = Institution::create(
             '测试机构',
-            'TEST001',
+            'TEST-' . uniqid(),
             '企业培训机构',
             '张三',
             '李四',
@@ -254,7 +253,7 @@ final class FacilityReportGeneratorTest extends TestCase
             '北京市朝阳区',
             '安全生产培训',
             new \DateTimeImmutable('2020-01-01'),
-            'REG123456'
+            'REG-' . uniqid()
         );
     }
 }

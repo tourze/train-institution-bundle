@@ -19,7 +19,7 @@ use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
  * 机构资质服务 - 重构后的简化版本，复杂度降低至安全范围
  */
 #[Autoconfigure(public: true)]
-class QualificationService
+final class QualificationService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

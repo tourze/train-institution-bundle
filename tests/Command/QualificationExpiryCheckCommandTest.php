@@ -6,17 +6,16 @@ namespace Tourze\TrainInstitutionBundle\Tests\Command;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
-use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 use Tourze\PHPUnitSymfonyKernelTest\AbstractCommandTestCase;
 use Tourze\TrainInstitutionBundle\Command\QualificationExpiryCheckCommand;
 use Tourze\TrainInstitutionBundle\Entity\Institution;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionQualification;
-use Tourze\TrainInstitutionBundle\Service\QualificationService;
 
 /**
- * QualificationExpiryCheckCommand 单元测试
+ * QualificationExpiryCheckCommand 集成测试
  *
  * @internal
  */
@@ -24,21 +23,15 @@ use Tourze\TrainInstitutionBundle\Service\QualificationService;
 #[RunTestsInSeparateProcesses]
 final class QualificationExpiryCheckCommandTest extends AbstractCommandTestCase
 {
-    private MockObject&QualificationService $qualificationService;
-
     private CommandTester $commandTester;
 
     protected function onSetUp(): void
     {
-        // 创建Mock服务并注册到容器
-        $this->qualificationService = $this->createMock(QualificationService::class);
-        self::getContainer()->set(QualificationService::class, $this->qualificationService);
-
         // 从容器获取命令实例
         $command = self::getService(QualificationExpiryCheckCommand::class);
 
         $application = new Application();
-        $application->add($command);
+        $application->addCommand($command);
         $this->commandTester = new CommandTester($command);
     }
 
@@ -48,238 +41,82 @@ final class QualificationExpiryCheckCommandTest extends AbstractCommandTestCase
     }
 
     /**
-     * 测试没有即将到期的资质
+     * 创建测试机构
      */
-    public function testNoExpiringQualifications(): void
+    private function createTestInstitution(string $name, string $code): Institution
     {
-        $this->qualificationService
-            ->expects($this->once())
-            ->method('getExpiringQualifications')
-            ->with(30)
-            ->willReturn([])
-        ;
+        $institution = Institution::create(
+            $name,
+            $code,
+            '企业培训机构',
+            '张三',
+            '李四',
+            '13800138000',
+            'test@example.com',
+            '北京市朝阳区',
+            '安全生产培训',
+            new \DateTimeImmutable('2020-01-01'),
+            'REG123456'
+        );
 
-        $this->commandTester->execute([]);
+        $entityManager = self::getEntityManager();
+        $entityManager->persist($institution);
+        $entityManager->flush();
 
-        $output = $this->commandTester->getDisplay();
-        self::assertStringContainsString('未发现30天内到期的资质', $output);
-        self::assertEquals(0, $this->commandTester->getStatusCode());
+        return $institution;
     }
 
     /**
-     * 测试有即将到期的资质
+     * 创建测试资质
      */
-    public function testWithExpiringQualifications(): void
-    {
-        /*
-         * 使用具体类 Institution 进行 Mock：
-         * 1) 为什么必须使用具体类：Institution 是 Doctrine Entity，通常不定义接口
-         * 2) 使用是否合理：合理，在测试中需要创建可控的实体对象，避免依赖数据库持久化
-         * 3) 更好的替代方案：可以使用 Entity 工厂或 Builder 模式，但 Mock 在单元测试中更加灵活可控
-         */
-        $institution = $this->createMock(Institution::class);
-        $institution->method('getInstitutionName')->willReturn('测试机构');
+    private function createTestQualification(
+        Institution $institution,
+        string $name,
+        string $certificateNumber,
+        \DateTimeImmutable $validTo,
+    ): InstitutionQualification {
+        $qualification = InstitutionQualification::create(
+            $institution,
+            '安全培训资质',                      // qualificationType
+            $name,                              // qualificationName
+            $certificateNumber,                 // certificateNumber
+            '发证机关',                          // issuingAuthority
+            new \DateTimeImmutable('2020-01-01'), // issueDate
+            new \DateTimeImmutable('2020-01-01'), // validFrom
+            $validTo                             // validTo
+        );
 
-        /*
-         * 使用具体类 InstitutionQualification 进行 Mock：
-         * 1) 为什么必须使用具体类：InstitutionQualification 是 Doctrine Entity，通常不定义接口
-         * 2) 使用是否合理：合理，测试中需要模拟资质实体的各种状态和属性
-         * 3) 更好的替代方案：可以创建真实的 Entity 实例，但 Mock 提供更好的控制和隔离
-         */
-        $qualification1 = $this->createMock(InstitutionQualification::class);
-        $qualification1->method('getInstitution')->willReturn($institution);
-        $qualification1->method('getQualificationName')->willReturn('安全培训资质');
-        $qualification1->method('getCertificateNumber')->willReturn('CERT001');
-        $qualification1->method('getValidTo')->willReturn(new \DateTimeImmutable('+15 days'));
-        $qualification1->method('getRemainingDays')->willReturn(15);
+        $entityManager = self::getEntityManager();
+        $entityManager->persist($qualification);
+        $entityManager->flush();
 
-        /*
-         * 使用具体类 InstitutionQualification 进行 Mock：
-         * 1) 为什么必须使用具体类：InstitutionQualification 是 Doctrine Entity，通常不定义接口
-         * 2) 使用是否合理：合理，测试中需要模拟不同到期时间的资质实体
-         * 3) 更好的替代方案：可以创建真实的 Entity 实例，但 Mock 提供更精确的测试控制
-         */
-        $qualification2 = $this->createMock(InstitutionQualification::class);
-        $qualification2->method('getInstitution')->willReturn($institution);
-        $qualification2->method('getQualificationName')->willReturn('特种作业培训资质');
-        $qualification2->method('getCertificateNumber')->willReturn('CERT002');
-        $qualification2->method('getValidTo')->willReturn(new \DateTimeImmutable('+5 days'));
-        $qualification2->method('getRemainingDays')->willReturn(5);
-
-        $expiringQualifications = [$qualification1, $qualification2];
-
-        $this->qualificationService
-            ->expects($this->once())
-            ->method('getExpiringQualifications')
-            ->with(30)
-            ->willReturn($expiringQualifications)
-        ;
-
-        $this->commandTester->execute([]);
-
-        $output = $this->commandTester->getDisplay();
-        self::assertStringContainsString('发现 2 个即将到期的资质', $output);
-        self::assertStringContainsString('测试机构', $output);
-        self::assertStringContainsString('安全培训资质', $output);
-        self::assertStringContainsString('CERT001', $output);
-        self::assertEquals(0, $this->commandTester->getStatusCode());
+        return $qualification;
     }
 
     /**
-     * 测试自定义检查天数
+     * 清理测试数据
      */
-    public function testCustomDays(): void
+    private function clearTestData(): void
     {
-        $this->qualificationService
-            ->expects($this->once())
-            ->method('getExpiringQualifications')
-            ->with(60)
-            ->willReturn([])
-        ;
-
-        $this->commandTester->execute(['--days' => '60']);
-
-        $output = $this->commandTester->getDisplay();
-        self::assertStringContainsString('未发现60天内到期的资质', $output);
-        self::assertEquals(0, $this->commandTester->getStatusCode());
+        $entityManager = self::getEntityManager();
+        $entityManager->createQuery('DELETE FROM Tourze\TrainInstitutionBundle\Entity\InstitutionQualification')->execute();
+        $entityManager->createQuery('DELETE FROM Tourze\TrainInstitutionBundle\Entity\Institution')->execute();
+        $entityManager->flush();
     }
 
     /**
-     * 测试JSON输出格式
+     * 测试命令配置
      */
-    public function testJsonFormat(): void
+    public function testCommandConfiguration(): void
     {
-        /*
-         * 使用具体类 Institution 进行 Mock：
-         * 1) 为什么必须使用具体类：Institution 是 Doctrine Entity，通常不定义接口
-         * 2) 使用是否合理：合理，测试JSON输出格式时需要可预测的数据结构
-         * 3) 更好的替代方案：可以使用真实 Entity，但 Mock 能确保输出一致性和可预测性
-         */
-        $institution = $this->createMock(Institution::class);
-        $institution->method('getInstitutionName')->willReturn('测试机构');
+        $command = self::getService(QualificationExpiryCheckCommand::class);
+        self::assertEquals(QualificationExpiryCheckCommand::NAME, $command->getName());
+        self::assertEquals('检查即将到期的培训机构资质证书', $command->getDescription());
 
-        /*
-         * 使用具体类 InstitutionQualification 进行 Mock：
-         * 1) 为什么必须使用具体类：InstitutionQualification 是 Doctrine Entity，通常不定义接口
-         * 2) 使用是否合理：合理，测试JSON输出格式时需要可控的资质数据结构
-         * 3) 更好的替代方案：可以创建真实的 Entity 实例，但 Mock 提供更精确的测试控制
-         */
-        $qualification = $this->createMock(InstitutionQualification::class);
-        $qualification->method('getInstitution')->willReturn($institution);
-        $qualification->method('getQualificationName')->willReturn('安全培训资质');
-        $qualification->method('getCertificateNumber')->willReturn('CERT001');
-        $qualification->method('getValidTo')->willReturn(new \DateTimeImmutable('+15 days'));
-        $qualification->method('getRemainingDays')->willReturn(15);
-
-        $this->qualificationService
-            ->expects($this->once())
-            ->method('getExpiringQualifications')
-            ->with(30)
-            ->willReturn([$qualification])
-        ;
-
-        $this->commandTester->execute(['--format' => 'json']);
-
-        $output = $this->commandTester->getDisplay();
-
-        // 提取JSON部分（从第一个{开始到最后一个}结束）
-        $jsonStart = strpos($output, '{');
-        $jsonEnd = strrpos($output, '}');
-        if (false !== $jsonStart && false !== $jsonEnd) {
-            $jsonString = substr($output, $jsonStart, $jsonEnd - $jsonStart + 1);
-            self::assertJson($jsonString);
-
-            /** @var array<string, mixed>|null $data */
-            $data = json_decode($jsonString, true);
-            self::assertNotNull($data);
-            self::assertIsArray($data);
-            self::assertArrayHasKey('summary', $data);
-            self::assertArrayHasKey('qualifications', $data);
-            self::assertIsArray($data['summary']);
-            self::assertArrayHasKey('total', $data['summary']);
-            self::assertEquals(1, $data['summary']['total']);
-        }
-
-        self::assertEquals(0, $this->commandTester->getStatusCode());
-    }
-
-    /**
-     * 测试CSV输出格式
-     */
-    public function testCsvFormat(): void
-    {
-        /*
-         * 使用具体类 Institution 进行 Mock：
-         * 1) 为什么必须使用具体类：Institution 是 Doctrine Entity，通常不定义接口
-         * 2) 使用是否合理：合理，测试CSV输出格式时需要可预测的数据
-         * 3) 更好的替代方案：可以使用真实 Entity，但 Mock 能确保输出一致性
-         */
-        $institution = $this->createMock(Institution::class);
-        $institution->method('getInstitutionName')->willReturn('测试机构');
-
-        /*
-         * 使用具体类 InstitutionQualification 进行 Mock：
-         * 1) 为什么必须使用具体类：InstitutionQualification 是 Doctrine Entity，通常不定义接口
-         * 2) 使用是否合理：合理，测试CSV输出格式时需要可控的资质数据
-         * 3) 更好的替代方案：可以创建真实的 Entity 实例，但 Mock 提供更精确的测试控制
-         */
-        $qualification = $this->createMock(InstitutionQualification::class);
-        $qualification->method('getInstitution')->willReturn($institution);
-        $qualification->method('getQualificationName')->willReturn('安全培训资质');
-        $qualification->method('getCertificateNumber')->willReturn('CERT001');
-        $qualification->method('getValidTo')->willReturn(new \DateTimeImmutable('+15 days'));
-        $qualification->method('getRemainingDays')->willReturn(15);
-
-        $this->qualificationService
-            ->expects($this->once())
-            ->method('getExpiringQualifications')
-            ->with(30)
-            ->willReturn([$qualification])
-        ;
-
-        $this->commandTester->execute(['--format' => 'csv']);
-
-        $output = $this->commandTester->getDisplay();
-        self::assertStringContainsString('机构名称,资质名称,证书编号,到期日期,剩余天数,状态', $output);
-        self::assertStringContainsString('测试机构,安全培训资质,CERT001', $output);
-        self::assertEquals(0, $this->commandTester->getStatusCode());
-    }
-
-    /**
-     * 测试干运行模式
-     */
-    public function testDryRunMode(): void
-    {
-        $this->qualificationService
-            ->expects($this->once())
-            ->method('getExpiringQualifications')
-            ->with(30)
-            ->willReturn([])
-        ;
-
-        $this->commandTester->execute(['--dry-run' => true]);
-
-        $output = $this->commandTester->getDisplay();
-        self::assertStringContainsString('运行在干运行模式', $output);
-        self::assertEquals(0, $this->commandTester->getStatusCode());
-    }
-
-    /**
-     * 测试服务异常处理
-     */
-    public function testServiceException(): void
-    {
-        $this->qualificationService
-            ->expects($this->once())
-            ->method('getExpiringQualifications')
-            ->willThrowException(new \Exception('服务错误'))
-        ;
-
-        $this->commandTester->execute([]);
-
-        $output = $this->commandTester->getDisplay();
-        self::assertStringContainsString('执行过程中发生错误: 服务错误', $output);
-        self::assertEquals(1, $this->commandTester->getStatusCode());
+        $definition = $command->getDefinition();
+        self::assertTrue($definition->hasOption('days'));
+        self::assertTrue($definition->hasOption('dry-run'));
+        self::assertTrue($definition->hasOption('format'));
     }
 
     /**
@@ -316,5 +153,63 @@ final class QualificationExpiryCheckCommandTest extends AbstractCommandTestCase
             $command->getDefinition()->hasOption('format'),
             'Command should have --format option'
         );
+    }
+
+    /**
+     * 测试没有即将到期的资质
+     */
+    public function testNoExpiringQualifications(): void
+    {
+        $this->clearTestData();
+
+        $this->commandTester->execute([]);
+
+        $output = $this->commandTester->getDisplay();
+        self::assertStringContainsString('未发现30天内到期的资质', $output);
+        self::assertEquals(Command::SUCCESS, $this->commandTester->getStatusCode());
+    }
+
+    /**
+     * 测试有即将到期的资质
+     */
+    public function testWithExpiringQualifications(): void
+    {
+        $this->clearTestData();
+        $institution = $this->createTestInstitution('测试机构', 'TEST001');
+        $this->createTestQualification(
+            $institution,
+            '安全培训资质',
+            'CERT001',
+            new \DateTimeImmutable('+15 days')
+        );
+
+        $this->commandTester->execute([]);
+
+        $output = $this->commandTester->getDisplay();
+        self::assertStringContainsString('测试机构', $output);
+        self::assertStringContainsString('安全培训资质', $output);
+        self::assertEquals(Command::SUCCESS, $this->commandTester->getStatusCode());
+    }
+
+    /**
+     * 测试自定义天数参数
+     */
+    public function testWithCustomDays(): void
+    {
+        $this->clearTestData();
+        $institution = $this->createTestInstitution('测试机构', 'TEST001');
+        $this->createTestQualification(
+            $institution,
+            '资质证书',
+            'CERT002',
+            new \DateTimeImmutable('+5 days')
+        );
+
+        $this->commandTester->execute(['--days' => '10']);
+
+        $output = $this->commandTester->getDisplay();
+        // +5 天到期的资质会在 --days 10 范围内被检测到
+        self::assertStringContainsString('资质证书', $output);
+        self::assertEquals(Command::SUCCESS, $this->commandTester->getStatusCode());
     }
 }

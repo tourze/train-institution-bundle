@@ -21,7 +21,7 @@ use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
  * 提供培训机构变更记录的核心业务逻辑，包括变更记录、审批流程、历史查询等功能
  */
 #[Autoconfigure(public: true)]
-class ChangeRecordService
+final class ChangeRecordService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

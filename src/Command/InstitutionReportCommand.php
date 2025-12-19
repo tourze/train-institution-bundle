@@ -23,7 +23,7 @@ use Tourze\TrainInstitutionBundle\Service\QualificationService;
  * 建议每月执行一次（cron: 0 6 1 * *）
  */
 #[AsCommand(name: self::NAME, description: '生成培训机构综合报告')]
-class InstitutionReportCommand extends Command
+final class InstitutionReportCommand extends Command
 {
     public const NAME = 'institution:report:generate';
 

@@ -14,7 +14,7 @@ use Tourze\TrainInstitutionBundle\Entity\InstitutionFacility;
 
 #[When(env: 'test')]
 #[When(env: 'dev')]
-class InstitutionFacilityFixtures extends Fixture implements DependentFixtureInterface, FixtureGroupInterface
+final class InstitutionFacilityFixtures extends Fixture implements DependentFixtureInterface, FixtureGroupInterface
 {
     public const CLASSROOM_FACILITY_REFERENCE = 'classroom-facility';
     public const TRAINING_FACILITY_REFERENCE = 'training-facility';

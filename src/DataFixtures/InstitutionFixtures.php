@@ -12,7 +12,7 @@ use Tourze\TrainInstitutionBundle\Entity\Institution;
 
 #[When(env: 'test')]
 #[When(env: 'dev')]
-class InstitutionFixtures extends Fixture implements FixtureGroupInterface
+final class InstitutionFixtures extends Fixture implements FixtureGroupInterface
 {
     public const ENTERPRISE_INSTITUTION_REFERENCE = 'enterprise-institution';
     public const SOCIAL_INSTITUTION_REFERENCE = 'social-institution';

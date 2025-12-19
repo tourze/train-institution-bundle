@@ -8,6 +8,7 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Tourze\PHPUnitSymfonyKernelTest\Attribute\AsRepository;
+use Tourze\TrainInstitutionBundle\Contract\InstitutionFacilityRepositoryInterface;
 use Tourze\TrainInstitutionBundle\Entity\Institution;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionFacility;
 
@@ -17,7 +18,7 @@ use Tourze\TrainInstitutionBundle\Entity\InstitutionFacility;
  */
 #[Autoconfigure(public: true)]
 #[AsRepository(entityClass: InstitutionFacility::class)]
-class InstitutionFacilityRepository extends ServiceEntityRepository
+final class InstitutionFacilityRepository extends ServiceEntityRepository implements InstitutionFacilityRepositoryInterface
 {
     public function __construct(ManagerRegistry $registry)
     {

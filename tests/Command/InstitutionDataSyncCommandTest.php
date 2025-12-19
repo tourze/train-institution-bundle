@@ -30,7 +30,7 @@ final class InstitutionDataSyncCommandTest extends AbstractCommandTestCase
         $command = self::getService(InstitutionDataSyncCommand::class);
 
         $application = new Application();
-        $application->add($command);
+        $application->addCommand($command);
         $this->commandTester = new CommandTester($command);
     }
 
@@ -356,7 +356,7 @@ final class InstitutionDataSyncCommandTest extends AbstractCommandTestCase
         // 重新创建CommandTester
         $command = self::getService(InstitutionDataSyncCommand::class);
         $application = new Application();
-        $application->add($command);
+        $application->addCommand($command);
         $this->commandTester = new CommandTester($command);
 
         // 测试很大的批处理大小
@@ -377,7 +377,7 @@ final class InstitutionDataSyncCommandTest extends AbstractCommandTestCase
             // 重新创建CommandTester
             $command = self::getService(InstitutionDataSyncCommand::class);
             $application = new Application();
-            $application->add($command);
+            $application->addCommand($command);
             $this->commandTester = new CommandTester($command);
 
             $exitCode = $this->commandTester->execute(['--source' => $source]);

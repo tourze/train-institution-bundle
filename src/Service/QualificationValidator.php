@@ -7,7 +7,7 @@ namespace Tourze\TrainInstitutionBundle\Service;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionQualification;
 use Tourze\TrainInstitutionBundle\Exception\DuplicateCertificateNumberException;
 use Tourze\TrainInstitutionBundle\Exception\InvalidQualificationDataException;
-use Tourze\TrainInstitutionBundle\Repository\InstitutionQualificationRepository;
+use Tourze\TrainInstitutionBundle\Contract\InstitutionQualificationRepositoryInterface;
 
 /**
  * 资质验证服务
@@ -15,7 +15,7 @@ use Tourze\TrainInstitutionBundle\Repository\InstitutionQualificationRepository;
 final class QualificationValidator
 {
     public function __construct(
-        private readonly InstitutionQualificationRepository $qualificationRepository,
+        private readonly InstitutionQualificationRepositoryInterface $qualificationRepository,
     ) {
     }
 

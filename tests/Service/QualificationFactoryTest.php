@@ -6,29 +6,31 @@ namespace Tourze\TrainInstitutionBundle\Tests\Service;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractIntegrationTestCase;
 use Tourze\TrainInstitutionBundle\Entity\Institution;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionQualification;
 use Tourze\TrainInstitutionBundle\Service\QualificationFactory;
 
 /**
- * QualificationFactory 单元测试
+ * QualificationFactory 集成测试
  *
  * @internal
  */
 #[CoversClass(QualificationFactory::class)]
-final class QualificationFactoryTest extends TestCase
+#[RunTestsInSeparateProcesses]
+final class QualificationFactoryTest extends AbstractIntegrationTestCase
 {
     private QualificationFactory $factory;
 
-    protected function setUp(): void
+    protected function onSetUp(): void
     {
-        $this->factory = new QualificationFactory();
+        $this->factory = self::getService(QualificationFactory::class);
     }
 
     public function testCreateQualificationEntity(): void
     {
-        $institution = $this->createMockInstitution();
+        $institution = $this->createTestInstitution();
         $qualificationData = $this->getValidQualificationData();
 
         $result = $this->factory->createQualificationEntity($institution, $qualificationData);
@@ -47,7 +49,7 @@ final class QualificationFactoryTest extends TestCase
 
     public function testCreateQualificationEntityWithDefaultValues(): void
     {
-        $institution = $this->createMockInstitution();
+        $institution = $this->createTestInstitution();
         $minimalData = [
             'qualificationType' => '职业技能培训资质',
             'qualificationName' => '安全生产培训资质',
@@ -100,7 +102,7 @@ final class QualificationFactoryTest extends TestCase
 
     public function testCreateQualificationEntityWithStringQualificationScope(): void
     {
-        $institution = $this->createMockInstitution();
+        $institution = $this->createTestInstitution();
         $qualificationData = $this->getValidQualificationData();
         $qualificationData['qualificationScope'] = [
             '特种作业人员培训',
@@ -124,7 +126,7 @@ final class QualificationFactoryTest extends TestCase
 
     public function testCreateQualificationEntityWithInvalidQualificationScope(): void
     {
-        $institution = $this->createMockInstitution();
+        $institution = $this->createTestInstitution();
         $qualificationData = $this->getValidQualificationData();
         $qualificationData['qualificationScope'] = 'not-an-array';
 
@@ -135,7 +137,7 @@ final class QualificationFactoryTest extends TestCase
 
     public function testCreateQualificationEntityWithNonStringQualificationStatus(): void
     {
-        $institution = $this->createMockInstitution();
+        $institution = $this->createTestInstitution();
         $qualificationData = $this->getValidQualificationData();
         $qualificationData['qualificationStatus'] = 123; // 非字符串
 
@@ -146,7 +148,7 @@ final class QualificationFactoryTest extends TestCase
 
     public function testCreateQualificationEntityWithInvalidAttachments(): void
     {
-        $institution = $this->createMockInstitution();
+        $institution = $this->createTestInstitution();
         $qualificationData = $this->getValidQualificationData();
         $qualificationData['attachments'] = 'not-an-array';
 
@@ -155,12 +157,21 @@ final class QualificationFactoryTest extends TestCase
         self::assertSame([], $result->getAttachments());
     }
 
-    private function createMockInstitution(): Institution
+    private function createTestInstitution(): Institution
     {
-        $institution = $this->createMock(Institution::class);
-        $institution->method('getId')->willReturn('test-institution-id');
-
-        return $institution;
+        return Institution::create(
+            '测试机构',
+            'TEST001',
+            '企业培训机构',
+            '张三',
+            '李四',
+            '13800138000',
+            'test@example.com',
+            '北京市朝阳区',
+            '安全生产培训',
+            new \DateTimeImmutable('2020-01-01'),
+            'REG123456'
+        );
     }
 
     /**

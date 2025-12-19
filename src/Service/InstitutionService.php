@@ -22,7 +22,7 @@ use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
  * 提供培训机构的核心业务逻辑，包括创建、更新、状态管理等功能
  */
 #[Autoconfigure(public: true)]
-class InstitutionService
+final class InstitutionService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

@@ -6,30 +6,32 @@ namespace Tourze\TrainInstitutionBundle\Tests\Service;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractIntegrationTestCase;
+use Tourze\TrainInstitutionBundle\Entity\Institution;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionQualification;
 use Tourze\TrainInstitutionBundle\Exception\DuplicateCertificateNumberException;
 use Tourze\TrainInstitutionBundle\Exception\InvalidQualificationDataException;
-use Tourze\TrainInstitutionBundle\Repository\InstitutionQualificationRepository;
+use Tourze\TrainInstitutionBundle\Contract\InstitutionQualificationRepositoryInterface;
 use Tourze\TrainInstitutionBundle\Service\QualificationValidator;
 
 /**
- * QualificationValidator 单元测试
+ * QualificationValidator 集成测试
  *
  * @internal
  */
 #[CoversClass(QualificationValidator::class)]
-final class QualificationValidatorTest extends TestCase
+#[RunTestsInSeparateProcesses]
+final class QualificationValidatorTest extends AbstractIntegrationTestCase
 {
     private QualificationValidator $validator;
 
-    private InstitutionQualificationRepository $repository;
+    private InstitutionQualificationRepositoryInterface $repository;
 
-    protected function setUp(): void
+    protected function onSetUp(): void
     {
-        $this->repository = $this->createMock(InstitutionQualificationRepository::class);
-        $this->validator = new QualificationValidator($this->repository);
+        $this->validator = self::getService(QualificationValidator::class);
+        $this->repository = self::getService(InstitutionQualificationRepositoryInterface::class);
     }
 
     public function testValidateQualificationDataWithValidData(): void
@@ -186,14 +188,30 @@ final class QualificationValidatorTest extends TestCase
 
     public function testValidateUpdatedQualificationWithValidDates(): void
     {
-        /** @var InstitutionQualification&MockObject $qualification */
-        $qualification = $this->createMockQualification();
-        $qualification->method('getValidFrom')
-            ->willReturn(new \DateTimeImmutable('2024-01-01'))
-        ;
-        $qualification->method('getValidTo')
-            ->willReturn(new \DateTimeImmutable('2026-01-01'))
-        ;
+        // 创建一个真实的资质对象
+        $institution = Institution::create(
+            '测试机构',
+            'TEST001',
+            '企业培训机构',
+            '张三',
+            '李四',
+            '13800138000',
+            'test@example.com',
+            '北京市朝阳区',
+            '安全生产培训',
+            new \DateTimeImmutable('2020-01-01'),
+            'REG123456'
+        );
+
+        $qualification = new InstitutionQualification();
+        $qualification->setInstitution($institution);
+        $qualification->setQualificationType('职业技能培训资质');
+        $qualification->setQualificationName('安全生产培训资质');
+        $qualification->setCertificateNumber('CERT-2024-001');
+        $qualification->setIssuingAuthority('应急管理部');
+        $qualification->setIssueDate(new \DateTimeImmutable('2024-01-01'));
+        $qualification->setValidFrom(new \DateTimeImmutable('2024-01-01'));
+        $qualification->setValidTo(new \DateTimeImmutable('2026-01-01'));
 
         // 有效的资质对象不应抛出异常
         $this->validator->validateUpdatedQualification($qualification);
@@ -203,14 +221,30 @@ final class QualificationValidatorTest extends TestCase
 
     public function testValidateUpdatedQualificationWithInvalidDates(): void
     {
-        /** @var InstitutionQualification&MockObject $qualification */
-        $qualification = $this->createMockQualification();
-        $qualification->method('getValidFrom')
-            ->willReturn(new \DateTimeImmutable('2026-01-01'))
-        ;
-        $qualification->method('getValidTo')
-            ->willReturn(new \DateTimeImmutable('2024-01-01'))
-        ;
+        // 创建一个真实的资质对象，但日期无效
+        $institution = Institution::create(
+            '测试机构',
+            'TEST001',
+            '企业培训机构',
+            '张三',
+            '李四',
+            '13800138000',
+            'test@example.com',
+            '北京市朝阳区',
+            '安全生产培训',
+            new \DateTimeImmutable('2020-01-01'),
+            'REG123456'
+        );
+
+        $qualification = new InstitutionQualification();
+        $qualification->setInstitution($institution);
+        $qualification->setQualificationType('职业技能培训资质');
+        $qualification->setQualificationName('安全生产培训资质');
+        $qualification->setCertificateNumber('CERT-2024-001');
+        $qualification->setIssuingAuthority('应急管理部');
+        $qualification->setIssueDate(new \DateTimeImmutable('2024-01-01'));
+        $qualification->setValidFrom(new \DateTimeImmutable('2026-01-01'));
+        $qualification->setValidTo(new \DateTimeImmutable('2024-01-01'));
 
         $this->expectException(InvalidQualificationDataException::class);
         $this->expectExceptionMessage('有效期开始日期必须早于结束日期');
@@ -223,12 +257,6 @@ final class QualificationValidatorTest extends TestCase
         $renewalData = [
             'newValidTo' => new \DateTimeImmutable('2027-01-01'),
         ];
-
-        /** @var InstitutionQualificationRepository&MockObject $repository */
-        $repository = $this->repository;
-        $repository->method('isCertificateNumberExists')
-            ->willReturn(false)
-        ;
 
         // 有效的续期数据不应抛出异常
         $this->validator->validateRenewalData($renewalData, 'test-qualification-id');
@@ -260,21 +288,47 @@ final class QualificationValidatorTest extends TestCase
 
     public function testValidateRenewalDataWithDuplicateCertificateNumber(): void
     {
+        // 首先创建一个包含目标证书编号的资质
+        $institution = Institution::create(
+            '测试机构',
+            'TEST-DUP-' . uniqid(),
+            '企业培训机构',
+            '张三',
+            '李四',
+            '13800138000',
+            'test@example.com',
+            '北京市朝阳区',
+            '安全生产培训',
+            new \DateTimeImmutable('2020-01-01'),
+            'REG-' . uniqid()
+        );
+
+        $entityManager = self::getEntityManager();
+        $entityManager->persist($institution);
+        $entityManager->flush();
+
+        $existingQualification = InstitutionQualification::create(
+            $institution,
+            '职业技能培训资质',
+            '安全生产培训资质',
+            'EXISTING-CERT-001',  // 这个证书编号会与续期数据冲突
+            '应急管理部',
+            new \DateTimeImmutable('2024-01-01'),
+            new \DateTimeImmutable('2024-01-01'),
+            new \DateTimeImmutable('2026-01-01')
+        );
+        $entityManager->persist($existingQualification);
+        $entityManager->flush();
+
         $renewalData = [
             'newValidTo' => new \DateTimeImmutable('2027-01-01'),
-            'newCertificateNumber' => 'EXISTING-CERT-001',
+            'newCertificateNumber' => 'EXISTING-CERT-001',  // 使用已存在的证书编号
         ];
-
-        /** @var InstitutionQualificationRepository&MockObject $repository */
-        $repository = $this->repository;
-        $repository->method('isCertificateNumberExists')
-            ->with('EXISTING-CERT-001', 'test-qualification-id')
-            ->willReturn(true)
-        ;
 
         $this->expectException(DuplicateCertificateNumberException::class);
 
-        $this->validator->validateRenewalData($renewalData, 'test-qualification-id');
+        // 使用不同的资质ID进行续期验证
+        $this->validator->validateRenewalData($renewalData, 'different-qualification-id');
     }
 
     public function testValidateRenewalDataWithNonStringCertificateNumber(): void
@@ -284,24 +338,13 @@ final class QualificationValidatorTest extends TestCase
             'newCertificateNumber' => 123, // 非字符串
         ];
 
-        // 非字符串的证书编号不应调用重复检查
-        /** @var InstitutionQualificationRepository&MockObject $repository */
-        $repository = $this->repository;
-        $repository->expects(self::never())
-            ->method('isCertificateNumberExists')
-        ;
-
         // 有效的续期数据不应抛出异常
         $this->validator->validateRenewalData($renewalData, 'test-qualification-id');
 
-        // expects() already provides the assertion, so we don't need expectNotToPerformAssertions()
+        $this->expectNotToPerformAssertions();
     }
 
-    private function createMockQualification(): InstitutionQualification
-    {
-        return $this->createMock(InstitutionQualification::class);
-    }
-
+    
     /**
      * @return array<string, mixed>
      */

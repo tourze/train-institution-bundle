@@ -20,7 +20,7 @@ use Tourze\TrainInstitutionBundle\Service\QualificationService;
  * 建议每日执行一次（cron: 0 9 * * *）
  */
 #[AsCommand(name: self::NAME, description: '检查即将到期的培训机构资质证书')]
-class QualificationExpiryCheckCommand extends Command
+final class QualificationExpiryCheckCommand extends Command
 {
     public const NAME = 'institution:qualification:expiry-check';
 

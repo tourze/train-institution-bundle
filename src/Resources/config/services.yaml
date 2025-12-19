@@ -1,16 +1,25 @@
 services:
-  # default configuration for services in *this* file
   _defaults:
-    autowire: true      # Automatically injects dependencies in your services.
-    autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+    autowire: true
+    autoconfigure: true
     public: false
 
-  Tourze\TrainInstitutionBundle\Command\:
-    resource: '../../Command/'
   Tourze\TrainInstitutionBundle\Controller\:
     resource: '../../Controller/'
-    tags: ['controller.service_arguments']
   Tourze\TrainInstitutionBundle\Repository\:
     resource: '../../Repository/'
   Tourze\TrainInstitutionBundle\Service\:
     resource: '../../Service/'
+    public: true
+  Tourze\TrainInstitutionBundle\Command\:
+    resource: '../../Command/'
+
+  # Repository interface aliases
+  Tourze\TrainInstitutionBundle\Contract\InstitutionFacilityRepositoryInterface:
+    alias: Tourze\TrainInstitutionBundle\Repository\InstitutionFacilityRepository
+  Tourze\TrainInstitutionBundle\Contract\InstitutionQualificationRepositoryInterface:
+    alias: Tourze\TrainInstitutionBundle\Repository\InstitutionQualificationRepository
+  Tourze\TrainInstitutionBundle\Contract\InstitutionChangeRecordRepositoryInterface:
+    alias: Tourze\TrainInstitutionBundle\Repository\InstitutionChangeRecordRepository
+  Tourze\TrainInstitutionBundle\Contract\InstitutionRepositoryInterface:
+    alias: Tourze\TrainInstitutionBundle\Repository\InstitutionRepository

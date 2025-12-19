@@ -17,7 +17,7 @@ use Tourze\TrainInstitutionBundle\Entity\InstitutionChangeRecord;
  */
 #[Autoconfigure(public: true)]
 #[AsRepository(entityClass: InstitutionChangeRecord::class)]
-class InstitutionChangeRecordRepository extends ServiceEntityRepository
+final class InstitutionChangeRecordRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

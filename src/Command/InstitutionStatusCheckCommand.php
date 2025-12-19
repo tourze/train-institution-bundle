@@ -21,7 +21,7 @@ use Tourze\TrainInstitutionBundle\Service\InstitutionService;
  * 建议每日执行一次（cron: 0 8 * * *）
  */
 #[AsCommand(name: self::NAME, description: '检查培训机构状态和合规性')]
-class InstitutionStatusCheckCommand extends Command
+final class InstitutionStatusCheckCommand extends Command
 {
     public const NAME = 'institution:status:check';
 

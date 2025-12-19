@@ -20,7 +20,7 @@ use Tourze\TrainInstitutionBundle\Service\FacilityService;
  * 建议每周执行一次（cron: 0 10 * * 1）
  */
 #[AsCommand(name: self::NAME, description: '安排培训设施检查')]
-class FacilityInspectionScheduleCommand extends Command
+final class FacilityInspectionScheduleCommand extends Command
 {
     public const NAME = 'institution:facility:inspection-schedule';
 

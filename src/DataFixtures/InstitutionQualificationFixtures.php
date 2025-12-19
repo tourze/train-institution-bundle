@@ -14,7 +14,7 @@ use Tourze\TrainInstitutionBundle\Entity\InstitutionQualification;
 
 #[When(env: 'test')]
 #[When(env: 'dev')]
-class InstitutionQualificationFixtures extends Fixture implements DependentFixtureInterface, FixtureGroupInterface
+final class InstitutionQualificationFixtures extends Fixture implements DependentFixtureInterface, FixtureGroupInterface
 {
     public const TRAINING_LICENSE_REFERENCE = 'training-license';
     public const SAFETY_QUALIFICATION_REFERENCE = 'safety-qualification';

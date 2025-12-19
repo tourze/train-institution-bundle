@@ -19,7 +19,7 @@ use Tourze\TrainInstitutionBundle\Entity\Institution;
  */
 #[Autoconfigure(public: true)]
 #[AsRepository(entityClass: Institution::class)]
-class InstitutionRepository extends ServiceEntityRepository
+final class InstitutionRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

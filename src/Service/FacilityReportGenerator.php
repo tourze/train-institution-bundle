@@ -6,7 +6,7 @@ namespace Tourze\TrainInstitutionBundle\Service;
 
 use Tourze\TrainInstitutionBundle\Entity\Institution;
 use Tourze\TrainInstitutionBundle\Entity\InstitutionFacility;
-use Tourze\TrainInstitutionBundle\Repository\InstitutionFacilityRepository;
+use Tourze\TrainInstitutionBundle\Contract\InstitutionFacilityRepositoryInterface;
 
 /**
  * 设施报告生成器
@@ -16,7 +16,7 @@ use Tourze\TrainInstitutionBundle\Repository\InstitutionFacilityRepository;
 final class FacilityReportGenerator
 {
     public function __construct(
-        private readonly InstitutionFacilityRepository $facilityRepository,
+        private readonly InstitutionFacilityRepositoryInterface $facilityRepository,
     ) {
     }
 

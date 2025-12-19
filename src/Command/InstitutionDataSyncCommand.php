@@ -19,7 +19,7 @@ use Tourze\TrainInstitutionBundle\Service\InstitutionService;
  * 建议每日执行一次（cron: 0 2 * * *）
  */
 #[AsCommand(name: self::NAME, description: '同步培训机构数据')]
-class InstitutionDataSyncCommand extends Command
+final class InstitutionDataSyncCommand extends Command
 {
     public const NAME = 'institution:data:sync';
 

@@ -14,7 +14,7 @@ use Tourze\TrainInstitutionBundle\Entity\InstitutionChangeRecord;
 
 #[When(env: 'test')]
 #[When(env: 'dev')]
-class InstitutionChangeRecordFixtures extends Fixture implements DependentFixtureInterface, FixtureGroupInterface
+final class InstitutionChangeRecordFixtures extends Fixture implements DependentFixtureInterface, FixtureGroupInterface
 {
     public const CONTACT_CHANGE_REFERENCE = 'contact-change';
     public const ADDRESS_CHANGE_REFERENCE = 'address-change';

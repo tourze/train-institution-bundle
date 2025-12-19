@@ -20,7 +20,7 @@ use Tourze\TrainInstitutionBundle\Repository\InstitutionRepository;
  * 提供培训机构设施的核心业务逻辑，包括设施添加、更新、检查调度、合规验证等功能
  */
 #[Autoconfigure(public: true)]
-class FacilityService
+final class FacilityService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
